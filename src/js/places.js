@@ -216,6 +216,7 @@ function setPaneHTML(p) {
     <p class="muted" style="margin:0;font-size:12px">Até 3 por cena.</p><button class="btn sm" data-act="varyPlace" type="button">Variar o cenário (${(p.v | 0) + 1}/4)</button></div>`;
 }
 function setClick(a, b, s) {
+  if (thingClick(a, b, s)) return true;
   if (a === 'setTog') { const k = b.dataset.v, cur = s.p.set || []; pushHistory('objeto de cena'); s.p.set = cur.includes(k) ? cur.filter(x => x !== k) : [...cur, k].slice(-3); afterChange(); return true; }
   if (a === 'varyPlace') { pushHistory('variar cenário'); s.p.v = ((s.p.v | 0) + 1) % 4; afterChange(); return true; }
   return false;

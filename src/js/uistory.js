@@ -69,7 +69,7 @@ function storyPaneHTML(P, s) {
     <label class="field"><span>Hora</span><select class="input" data-k="sp" data-f="time">${opt({ day: 'Dia', dusk: 'Fim de tarde', night: 'Noite' }, p.time)}</select></label>
     <label class="field"><span>Câmera</span><select class="input" data-k="sp" data-f="camera">${opt(CAM_NAMES, p.camera)}</select></label>
     <label class="field"><span>Clima</span><select class="input" data-k="sp" data-f="mood">${opt(MOOD_NAMES, p.mood)}</select></label></div>
-    <label class="toggle"><span>Multidão ao fundo</span><input type="checkbox" data-k="sp" data-f="crowd" ${p.crowd ? 'checked' : ''}></label></div>${setPaneHTML(p)}
+    <label class="toggle"><span>Multidão ao fundo</span><input type="checkbox" data-k="sp" data-f="crowd" ${p.crowd ? 'checked' : ''}></label></div>${thingsPaneHTML(p)}${setPaneHTML(p)}
   <div class="group"><h4>Personagem principal</h4><div class="row2">
     <label class="field"><span>Quem</span><select class="input" data-k="sh" data-f="who">${castOpts(h.who, true)}</select></label>
     <label class="field"><span>Enquadramento</span><select class="input" data-k="sh" data-f="shot">${opt({ wide: 'Corpo inteiro', medium: 'Cintura para cima', close: 'Close no rosto' }, h.shot || 'wide')}</select></label>

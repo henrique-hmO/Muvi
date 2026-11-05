@@ -602,12 +602,13 @@ function drawFrame(ctx, P, t, opts = {}) {
     const flat = s.kind === 'story' || s.kind === 'talk' || s.kind === 'obj' || s.kind === 'doc' || s.kind === 'photo';
     const out = flat ? 1 : outro(loc.local, loc.dur);
     ctx.save(); ctx.globalAlpha = out; ctx.translate(0, (1 - out) * -Math.min(W, H) * .03);
+    if (flat && loc.index > 0 && loc.local < .26) { const e = ease.out(clamp(loc.local / .26)), sty = loc.index % 4; if (sty === 1 || sty === 3) ctx.translate((1 - e) * W * .28 * (sty === 1 ? 1 : -1), 0); else if (sty === 2) { ctx.translate(W / 2, H / 2); ctx.scale(1 + (1 - e) * .18, 1 + (1 - e) * .18); ctx.rotate((1 - e) * .03); ctx.translate(-W / 2, -H / 2); } }
     try { fn(ctx, L, W, H, loc.local, loc.dur, s.p || {}); } catch (e) { console.warn('scene draw', e); }
     ctx.restore();
     if (P.chrome && !flat) drawChrome(ctx, L, W, H, P, loc, total);
     if (loc.index > 0 && !flat) drawWipe(ctx, L, W, H, loc.local);
     if (loc.index === 0 && P.mode !== 'footage') { const f = 1 - clamp(loc.local / .18); if (f > 0) { ctx.fillStyle = `rgba(255,255,255,${(f * .55).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } }
-    if (loc.index > 0 && flat) { const f = 1 - clamp(loc.local / .12); if (f > 0) { ctx.fillStyle = `rgba(255,255,255,${(f * .35).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } }
+    if (loc.index > 0 && flat) { const sty = loc.index % 4, f = 1 - clamp(loc.local / (sty === 0 ? .12 : .2)); if (f > 0) { if (sty === 0) { ctx.fillStyle = `rgba(255,255,255,${(f * .35).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } else if (sty !== 2) { ctx.save(); ctx.globalAlpha = f * .7; ctx.fillStyle = '#fff'; const r = seeded(loc.index); for (let i = 0; i < 14; i++) ctx.fillRect(0, r() * H, W, Math.max(2, H * .004)); ctx.restore(); } else { ctx.fillStyle = `rgba(0,0,0,${(f * .25).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } } }
   }
   drawCaptions(ctx, L, W, H, P, t);
   if (P.progressBar) drawProgress(ctx, L, W, H, t, total);

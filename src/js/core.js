@@ -6,6 +6,7 @@ const lerp = (a, b, k) => a + (b - a) * k;
 const uid = () => Math.random().toString(36).slice(2, 9);
 const ease = {
   out: k => 1 - Math.pow(1 - k, 3),
+  in: k => k * k * k,
   inOut: k => (k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2),
   back: k => { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); },
   expo: k => (k >= 1 ? 1 : 1 - Math.pow(2, -10 * k)),

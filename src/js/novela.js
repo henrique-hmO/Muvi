@@ -19,6 +19,7 @@ function scriptOf(P) { return P.scenes.map(sceneSpeech).filter(Boolean).join(' '
 
 /* ---------- dialogue scene: renderer ---------- */
 DRAW.talk = (ctx, L, W, H, t, d, p) => {
+  PLACE_FX.fall = false; PLACE_FX.cabin = p.place === 'cabin'; PLACE_FX.drive = (p.things || []).some(x => x.anim === 'drive');
   const P = S.__drawP || S.project, m = Math.min(W, H), vertical = H > W, gy = H * .8;
   const chars = (p.chars || []).slice(0, 4), many = chars.length > 2, ch = (vertical ? H * .47 : H * .68) * (many ? .84 : 1), lines = p.lines || [], times = talkTimesP(p, d);
   let li = -1; for (let j = 0; j < times.length; j++) if (t >= times[j][0] - .05) li = j;
@@ -53,6 +54,7 @@ DRAW.talk = (ctx, L, W, H, t, d, p) => {
     return;
   }
   const env = drawPlace(ctx, W, H, p.place || 'room', p.time || 'day', t, cam, p);
+  drawThings(ctx, W, H, p.things, t, d, 'back');
   ctx.save(); ctx.translate(W / 2, gy); ctx.scale(cam.z, cam.z); ctx.translate(-W / 2 - cam.x, -gy);
   const avg = chars.reduce((a, _, j) => a + xOf(j), 0) / Math.max(1, chars.length);
   const order = chars.map((_, j) => j).sort((a, b) => (cur && chars[a].who === cur.who ? 1 : 0) - (cur && chars[b].who === cur.who ? 1 : 0));
@@ -68,6 +70,7 @@ DRAW.talk = (ctx, L, W, H, t, d, p) => {
   }
   ctx.restore();
   env.fg?.();
+  drawThings(ctx, W, H, p.things, t, d, 'front');
   drawMood(ctx, W, H, p.mood || 'normal', t);
   /* name tag over whoever is speaking */
   if (cur && cur.who !== 'narrator' && idx(cur.who) >= 0) {
@@ -98,7 +101,7 @@ function normTalk(p) {
   for (const l of lines) if (l.who !== 'narrator' && !chars.find(c => c.who === l.who) && chars.length < 4) chars.push({ who: l.who, x: NaN, facing: '', pose: 'stand', emotion: 'neutral', prop: 'none' });
   const xs = chars.map(c => c.x), bad = xs.some(x => !Number.isFinite(x)) || xs.some((x, i) => xs.some((y, j) => j !== i && Math.abs(x - y) < .14));
   chars.forEach((c, i) => { c.x = bad ? (chars.length < 2 ? .5 : chars.length > 2 ? +(.17 + i * .66 / (chars.length - 1)).toFixed(2) : +(.26 + i * .48 / (chars.length - 1)).toFixed(2)) : clamp(c.x, .1, .9); });
-  return { place: pick(p.place, PLACES, 'room'), time: pick(p.time, TIMES, 'day'), mood: pick(p.mood, MOODS, 'normal'), camera: p.camera === 'auto' || CAMERAS.includes(p.camera) ? p.camera || 'auto' : 'auto', text: String(p.text || '').slice(0, 60), chars, lines, lineTimes: null, ...normSet(p), brand: brandOf(p.brand) };
+  return { place: pick(p.place, PLACES, 'room'), time: pick(p.time, TIMES, 'day'), mood: pick(p.mood, MOODS, 'normal'), camera: p.camera === 'auto' || CAMERAS.includes(p.camera) ? p.camera || 'auto' : 'auto', text: String(p.text || '').slice(0, 60), chars, lines, lineTimes: null, ...normSet(p), brand: brandOf(p.brand), things: normThings(p.things) };
 }
 
 /* ---------- voices per character ---------- */
@@ -210,7 +213,7 @@ const TALK_GUIDE = `Cena de diálogo (kind "talk"): os personagens conversam na 
  "chars":[{"who":"<id>","x":0.3,"pose":"${POSES.join('|')}","emotion":"${EMOTIONS.join('|')}","prop":"${PROPS.join('|')}"},{"who":"<id>","x":0.7,"pose":"...","emotion":"..."}],
  "lines":[{"who":"<id>","text":"fala","emotion":"..."}],
  "text":""}}
-Cada cena de diálogo tem de 1 a 4 falas, cada fala até 14 palavras. Até 3 personagens na cena (x entre 0.2 e 0.8, bem separados). "emotion" de cada fala muda o rosto de quem fala. "text" só em momento chocante (até 4 palavras). "who":"narrator" numa fala é o narrador em off. camera "auto" segue quem fala; "shake" para choque. Pode ter "set":[...] (objetos de fundo, mesma lista das cenas do narrador).`;
+Cada cena de diálogo tem de 1 a 4 falas, cada fala até 14 palavras. Até 3 personagens na cena (x entre 0.2 e 0.8, bem separados). "emotion" de cada fala muda o rosto de quem fala. "text" só em momento chocante (até 4 palavras). "who":"narrator" numa fala é o narrador em off. camera "auto" segue quem fala; "shake" para choque. Pode ter "set":[...] e "things":[...] (mesmas listas das cenas do narrador).`;
 const NV_CAST_GUIDE = `Elenco fixo da novela (2 a 5 personagens; o protagonista tem id "hero"; ids curtos sem espaço):
 [{"id":"hero","name":"nome brasileiro","g":"m|f","about":"quem é, o que quer, segredo, jeito de falar (1 frase)","skin":"s1|s2|s3|s4|s5","hair":"${HAIRS.join('|')}","hairColor":"#hex","beard":"none|stubble|beard","top":"${TOPS.join('|')}","topColor":"#hex","pants":"#hex","accessory":"${ACCS.join('|')}","print":"estampa curta (opcional)","capText":"texto do boné (opcional)","capBrand":"id de marca do canal (opcional)","shirtBrand":"id de marca do canal (opcional)"}]
 Use cores de roupa bem diferentes entre os personagens para o público reconhecer cada um.`;
@@ -397,7 +400,7 @@ function talkPaneHTML(P, s) {
     <label class="field"><span>Hora</span><select class="input" data-k="sp" data-f="time">${opt({ day: 'Dia', dusk: 'Fim de tarde', night: 'Noite' }, p.time)}</select></label>
     <label class="field"><span>Câmera</span><select class="input" data-k="sp" data-f="camera">${opt({ auto: 'Segue quem fala', ...CAM_NAMES }, p.camera)}</select></label>
     <label class="field"><span>Clima</span><select class="input" data-k="sp" data-f="mood">${opt(MOOD_NAMES, p.mood)}</select></label></div>
-    <label class="field"><span>Texto grande na tela (opcional)</span><input class="input" data-k="sp" data-f="text" value="${esc(p.text || '')}"></label></div>${setPaneHTML(p)}
+    <label class="field"><span>Texto grande na tela (opcional)</span><input class="input" data-k="sp" data-f="text" value="${esc(p.text || '')}"></label></div>${thingsPaneHTML(p)}${setPaneHTML(p)}
   <div class="group"><h4>Refazer com o Claude</h4><input class="input" id="paneRedo" placeholder="Ex.: mais tensa, ela desconfia dele"><button class="btn ai sm" data-act="redo" type="button">Refazer cena</button>${s.versions?.length ? `<button class="btn sm" data-act="prev" type="button">Voltar à versão anterior (${s.versions.length})</button>` : ''}</div>`;
 }
 function talkEdit(k, f, v, s, P) {

@@ -22,9 +22,10 @@ function drawToon(ctx, look, o, t) {
   };
   const limbPts = (x, y, a1, l1, a2, l2) => { const ex = x + Math.sin(a1) * l1, ey = y + Math.cos(a1) * l1, a = a1 + a2; return [ex, ey, ex + Math.sin(a) * l2, ey + Math.cos(a) * l2, a]; };
   ctx.save(); ctx.scale(facing * u, u);
-  ctx.fillStyle = 'rgba(0,0,0,.25)'; ell(0, 0, 19, 3.4); ctx.fill();
+  if (pose !== 'fall') { ctx.fillStyle = 'rgba(0,0,0,.25)'; ell(0, 0, 19, 3.4); ctx.fill(); }
+  if (talking && (pose === 'stand' || pose === 'cross')) { A.uaF = -.55 + Math.sin(ph * 4.3) * .35; A.faF = -1.05 + Math.sin(ph * 5.7) * .35; A.head += Math.sin(ph * 3.1) * .04; }
   const sitDrop = A.lift ? 14 : 0; ctx.translate(0, A.bob * .8 + sitDrop); ctx.rotate(A.lean * .7);
-  if (A.lift) { ctx.beginPath(); rrp(ctx, -16, -14 - sitDrop + 14, 30, 14, 3); fillStroke(sil('#7a5a3a')); }
+  if (A.lift && !PLACE_FX.cabin) { ctx.beginPath(); rrp(ctx, -16, -14 - sitDrop + 14, 30, 14, 3); fillStroke(sil('#7a5a3a')); }
   const hipY = -26, shY = -50, longSleeve = ['hoodie', 'suit', 'uniform', 'jacket'].includes(look.top);
   const shoe = (x, y) => { ctx.beginPath(); rrp(ctx, x - 4, y - 2.6, 11, 5.6, 2.6); fillStroke(sil('#2a2a30')); };
   /* legs */

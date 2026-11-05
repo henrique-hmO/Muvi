@@ -179,6 +179,7 @@ Direção de arte: o protagonista ("hero") aparece em quase todas as cenas e rea
 Campo opcional "set":[...] com objetos de fundo.
 "shot": "close" = rosto enorme reagindo (use em choque, dúvida, piada, ~1 a cada 3 cenas), "medium" = da cintura para cima, "wide" = corpo inteiro no cenário. Varie o enquadramento como num desenho animado.
 ${SET_GUIDE}
+${THING_GUIDE}
 ${OBJ_GUIDE}`;
 const CAST_GUIDE = `Elenco: defina de 2 a 5 personagens que se repetem no vídeo (ids curtos; o protagonista tem id "hero"):
 [{"id":"hero","name":"...","skin":"s1|s2|s3|s4|s5 (s1 mais claro, s5 mais escuro)","hair":"${HAIRS.join('|')}","hairColor":"#hex","beard":"none|stubble|beard","top":"${TOPS.join('|')}","topColor":"#hex","pants":"#hex","accessory":"${ACCS.join('|')}","print":"estampa curta da camiseta (opcional, ex.: CORRIDA 10K/2019)","capText":"texto do boné se hair=cap (opcional)","capBrand":"id de marca do canal (opcional)","shirtBrand":"id de marca do canal (opcional)"}]`;

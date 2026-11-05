@@ -592,7 +592,7 @@ function initInspector() {
     else if (k === 'sp' || k === 'pp' || k === 'pd') { s.p[f] = v; if (k === 'pd' && f === 'crowd') el.previousElementSibling.textContent = `Bonecos no chão: ${v}`; }
     else if (k === 'pdb') { s.p.big = { ...(s.p.big || { value: '', label: '' }), [f]: v }; if (!String(s.p.big.value).trim()) s.p.big = String(s.p.big.label || '').trim() ? s.p.big : null; }
     else if (/^di\d$/.test(k)) s.p.items[+k.slice(2)][f] = f === 'count' ? clamp(Math.round(Number(v) || 1), 1, 4) : v;
-    else if (talkEdit(k, f, v, s, P) || objEdit(k, f, v, s)) { }
+    else if (talkEdit(k, f, v, s, P) || objEdit(k, f, v, s) || thingEdit(k, f, v, s)) { }
     else if (k === 'sh') s.p.hero[f] = v;
     else if (/^se\d$/.test(k)) s.p.extras[+k.slice(2)][f] = v;
     else if (/^cast\d$/.test(k)) { P.cast[+k.slice(4)][f] = v; drawCastThumbs(P); }

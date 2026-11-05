@@ -310,7 +310,9 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
   }
   const punch = 1 + .07 * (1 - ease.out(clamp(t / .3))); cam.z *= punch;
   const shot = p.hero?.shot || 'wide', near = shot !== 'wide' && p.hero?.who !== 'none';
+  PLACE_FX.fall = p.hero?.pose === 'fall'; PLACE_FX.cabin = p.place === 'cabin'; PLACE_FX.drive = p.hero?.pose === 'drive' || (p.things || []).some(x => x.anim === 'drive');
   const env = near ? drawPlaceBlur(ctx, W, H, p.place || 'city', p.time || 'day', t, cam, p, shot === 'close' ? 7 : 4) : drawPlace(ctx, W, H, p.place || 'city', p.time || 'day', t, cam, p);
+  drawThings(ctx, W, H, p.things, t, d, 'back');
   /* characters live in the world layer (parallax 0); close/medium frame the face like a cartoon close-up */
   const vertical = H > W, ch = shot === 'close' ? (vertical ? H * 1.25 : H * 1.9) : shot === 'medium' ? (vertical ? H * .82 : H * 1.15) : (vertical ? H * .44 : H * .66);
   const gy = shot === 'close' ? H * .42 + ch * .71 : shot === 'medium' ? H * .36 + ch * .71 : H * .8;
@@ -326,7 +328,8 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
     let hx = Number.isFinite(+hero.x) ? +hero.x : .5; if (shot === 'close') hx = .5; else if (shot === 'medium') hx = clamp(hx, .38, .62); const face = hero.facing === 'left' ? -1 : 1;
     if (hero.pose === 'walk') hx += (k - .5) * .16 * face; if (hero.pose === 'run') hx += (k - .5) * .34 * face;
     ctx.save(); ctx.translate(W * hx, gy + H * .02);
-    const enter = .35 + .65 * ease.out(clamp(t / .35)); ctx.globalAlpha = enter; ctx.translate(0, (1 - enter) * H * .02);
+    const ein = ease.back(clamp(t / .4)); ctx.translate((1 - ein) * -face * W * .14, 0);
+    if (hero.pose === 'fall') { ctx.translate(0, -H * (shot === 'wide' ? .32 : .1) + Math.sin(t * 2) * H * .01); ctx.rotate(Math.sin(t * 1.7) * .35); }
     drawPerson(ctx, castOf(P, hero.who || 'hero'), { h: ch, facing: face, pose: hero.pose || 'stand', emotion: hero.emotion || 'neutral', prop: hero.prop || 'none' }, t);
     ctx.restore();
     if (p.icon) drawIcon(ctx, p.icon, W / 2 + (W * hx - W / 2 - cam.x) * cam.z + m * .16 * face, Math.max(m * .14, gy - (ch * .97) * cam.z), m * .1, t - .3, L);
@@ -341,6 +344,7 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
   }
   ctx.restore();
   env.fg?.();
+  drawThings(ctx, W, H, p.things, t, d, 'front');
   drawMood(ctx, W, H, p.mood || 'normal', t);
   /* stage label: "NÍVEL 3 · GERENTE" */
   if (p.label) {
@@ -371,7 +375,7 @@ function normStory(p) {
     place: pick(p.place, PLACES, 'city'), time: pick(p.time, TIMES, 'day'), camera: pick(p.camera, CAMERAS, 'push'), mood: pick(p.mood, MOODS, 'normal'), icon: pick(p.icon || '', ICONS, ''),
     label: String(p.label || '').slice(0, 40), text: String(p.text || '').slice(0, 70), money: String(p.money || '').slice(0, 24), crowd: !!p.crowd,
     hero: { who: String(h.who || 'hero'), shot: ['close', 'medium', 'wide'].includes(h.shot) ? h.shot : 'wide', pose: pick(h.pose, POSES, 'stand'), emotion: pick(h.emotion, EMOTIONS, 'neutral'), prop: pick(h.prop, PROPS, 'none'), x: clamp(Number(h.x ?? .5), .1, .9), facing: h.facing === 'left' ? 'left' : 'right' },
-    ...normSet(p), brand: brandOf(p.brand),
+    ...normSet(p), brand: brandOf(p.brand), things: normThings(p.things),
     extras: (Array.isArray(p.extras) ? p.extras : []).slice(0, 3).map(e => ({ who: String(e.who || 'friend'), pose: pick(e.pose, POSES, 'stand'), emotion: pick(e.emotion, EMOTIONS, 'neutral'), prop: pick(e.prop, PROPS, 'none'), x: clamp(Number(e.x ?? .75), .05, .95), facing: e.facing })),
   };
 }
