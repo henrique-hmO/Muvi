@@ -1,0 +1,30 @@
+feature,area,priority,original,clone,notes
+Prompt -> roteiro -> cenas,gerar,must,Vivideo/Invideo,yes,Claude via capability
+Aprovar/refazer cena a cena,storyboard,must,Vivideo agent,yes,
+Cenas em motion graphics (título/lista/número/comparação/passos/citação/CTA),gerar,must,—,yes,render em canvas
+Formatos 9:16 1:1 16:9,geral,must,todos,yes,
+Upload de vídeo próprio,editar,must,todos,yes,
+Transcrição com tempo por palavra,editar,must,Descript/CapCut,partial,Chrome ouve o áudio do vídeo; tempos por frase distribuídos por palavra; alternativa colar texto/SRT
+Legendas animadas palavra a palavra com destaque,legendas,must,Submagic/CapCut,yes,
+Presets de legenda,legendas,must,Submagic,yes,
+Remover silêncios e vícios de linguagem,editar,must,Descript/Submagic,yes,
+Editar riscando a transcrição,editar,should,Descript,yes,
+Auto-zoom em momentos-chave,editar,should,Submagic,yes,
+Títulos/overlays animados sobre o vídeo,editar,must,CapCut/Submagic,yes,
+B-roll animado por palavra-chave,editar,should,Submagic,yes,motion graphics no lugar de stock
+Hook title,editar,should,Submagic,yes,
+Timeline multitrilha com playhead,estúdio,must,CapCut,yes,
+Split/delete/trim na timeline,estúdio,must,CapCut,yes,
+Chat de comandos (Magic Box),estúdio,must,Invideo,yes,
+Undo/redo,estúdio,must,Invideo/CapCut,yes,
+Atalhos de teclado,estúdio,should,CapCut,yes,
+Paleta/brand kit,geral,should,Vivideo,yes,Moove IA como padrão
+Música de fundo,áudio,could,Submagic,yes,upload do usuário
+Cortes virais com nota,clips,could,Opus,yes,
+Export MP4,export,must,todos,yes,WebCodecs/MediaRecorder
+Export SRT,export,should,Vivideo,yes,
+Gerador fallback sem Claude,gerar,should,—,yes,
+Vídeo realista (Veo/Sora/Kling),gerar,skip,Vivideo/Deevid,no,API paga — fora por decisão
+Avatar + lip-sync,gerar,skip,Deevid/Vivideo,no,modelo proprietário
+Stock B-roll licenciado,editar,skip,Submagic,no,licenciado
+Postar em redes,export,skip,Opus/Submagic,no,fora do artefato

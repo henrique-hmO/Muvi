@@ -1,0 +1,11 @@
+feature,area,priority,original,clone,notes
+Enviar vídeo de referência,entrada,must,yes,no,arquivo; link não
+Detecção de cortes e ritmo,análise,must,yes,no,local e grátis
+Leitura de fala e picos de áudio,análise,must,yes,no,local
+Quadros-chave do gancho e de cada cena,análise,must,yes,no,8 quadros pequenos
+Blueprint: tipo de gancho / batidas / retenção / final,análise,must,yes,no,1 chamada do Claude
+Salvar estruturas para reutilizar,biblioteca,must,yes,no,db da conta
+Aplicar estrutura ao gerar (explicativo / narração / novela),geração,must,yes,no,escala para a duração
+Variações A/B da mesma estrutura,geração,could,yes,no,
+Biblioteca de virais em alta,descoberta,skip,yes,no,dados proprietários
+Clonar por link,entrada,skip,no,no,o próprio Buzzy não faz
