@@ -4,6 +4,6 @@ cd "$(dirname "$0")"
 OUT=muvi.html
 cat src/shell.html > $OUT
 echo '<script>' >> $OUT
-for f in core render story places toon brands objs things cine doc audio ai media export uistory uidoc trends novela history viral ui; do echo "/* ---- $f.js ---- */" >> $OUT; cat src/js/$f.js >> $OUT; echo >> $OUT; done
+for f in core render story places toon brands objs things cine cinethings doc audio ai media export uistory uidoc trends novela history viral ui; do echo "/* ---- $f.js ---- */" >> $OUT; cat src/js/$f.js >> $OUT; echo >> $OUT; done
 echo '</script>' >> $OUT
 echo "Pronto: $OUT ($(wc -c < $OUT) bytes)"

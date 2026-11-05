@@ -4,25 +4,25 @@ const CINE_FX = new Set(['rain', 'storm', 'money_rain', 'confetti', 'hearts', 'z
 const isCine = P => (P || S.__drawP)?.charStyle === 'cine';
 
 /* ---------- soft shading layer: draws into an offscreen box, then lights it from the top-left ---------- */
-const CL = { cv: null, c: null };
-function cineLayer(ctx, box, draw, k = 1) {
+const CL_POOL = []; let CL_DEPTH = 0;
+function cineLayer(ctx, box, draw, k = 1, sat = 1) {
   const T = ctx.getTransform(), cw = ctx.canvas.width, ch = ctx.canvas.height;
   const pts = [[box[0], box[1]], [box[2], box[1]], [box[0], box[3]], [box[2], box[3]]].map(([x, y]) => [T.a * x + T.c * y + T.e, T.b * x + T.d * y + T.f]);
   let x0 = Math.floor(Math.max(0, Math.min(...pts.map(p => p[0])))), y0 = Math.floor(Math.max(0, Math.min(...pts.map(p => p[1]))));
   const x1 = Math.ceil(Math.min(cw, Math.max(...pts.map(p => p[0])))), y1 = Math.ceil(Math.min(ch, Math.max(...pts.map(p => p[1]))));
   const bw = x1 - x0, bh = y1 - y0; if (bw < 2 || bh < 2) return;
-  if (!CL.cv) { CL.cv = document.createElement('canvas'); CL.c = CL.cv.getContext('2d'); }
+  const CL = CL_POOL[CL_DEPTH] || (CL_POOL[CL_DEPTH] = { cv: document.createElement('canvas') }); if (!CL.c) CL.c = CL.cv.getContext('2d');
   if (CL.cv.width < bw || CL.cv.height < bh) { CL.cv.width = Math.max(bw, CL.cv.width); CL.cv.height = Math.max(bh, CL.cv.height); }
   const o = CL.c; o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = 'source-over'; o.globalAlpha = 1; o.clearRect(0, 0, bw, bh);
   o.setTransform(T.a, T.b, T.c, T.d, T.e - x0, T.f - y0);
-  draw(o);
+  CL_DEPTH++; try { draw(o); } finally { CL_DEPTH--; }
   o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = 'source-atop'; o.globalAlpha = 1;
   const g = o.createLinearGradient(0, 0, bw, bh);
   g.addColorStop(0, `rgba(255,246,232,${.16 * k})`); g.addColorStop(.42, 'rgba(255,246,232,0)'); g.addColorStop(.62, 'rgba(25,12,6,0)'); g.addColorStop(1, `rgba(25,12,6,${.34 * k})`);
   o.fillStyle = g; o.fillRect(0, 0, bw, bh);
   const v = o.createLinearGradient(0, 0, 0, bh); v.addColorStop(.7, 'rgba(20,10,5,0)'); v.addColorStop(1, `rgba(20,10,5,${.18 * k})`); o.fillStyle = v; o.fillRect(0, 0, bw, bh);
   o.globalCompositeOperation = 'source-over';
-  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(CL.cv, 0, 0, bw, bh, x0, y0, bw, bh); ctx.restore();
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); if (sat < 1 && 'filter' in ctx) ctx.filter = `saturate(${sat})`; ctx.drawImage(CL.cv, 0, 0, bw, bh, x0, y0, bw, bh); ctx.restore();
 }
 
 /* ---------- realistic rig: feet at (0,0), 100 units tall, facing right ---------- */

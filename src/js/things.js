@@ -98,11 +98,11 @@ function drawThings(ctx, W, H, things, t, d, layer) {
   const m = Math.min(W, H);
   for (const th of things || []) {
     if ((th.front ? 'front' : 'back') !== layer) continue;
-    const f = THING_DRAW[th.type]; if (!f) continue;
+    const f = (isCine() && CINE_DRAW[th.type]) || THING_DRAW[th.type]; if (!f) continue;
     const mo = thingMotion(th, t, d), s = m * clamp(Number(th.size) || .5, .1, 2.5) * (H > W ? 1 : .8);
     ctx.save(); ctx.translate(mo.x * W, mo.y * H); ctx.rotate(mo.rot); if (mo.face < 0) ctx.scale(-1, 1);
     const run = c => { try { f(c, s, t, th.anim || 'idle', W, H, th); } catch (e) { console.warn('thing', th.type, e); } };
-    if (isCine() && !CINE_FX.has(th.type)) cineLayer(ctx, [-s * 1.1, -s * 1.1, s * 1.1, s * .9], run); else run(ctx);
+    if (isCine() && !CINE_FX.has(th.type)) cineLayer(ctx, [-s * 1.1, -s * 1.1, s * 1.1, s * .9], run, 1, CINE_DRAW[th.type] ? 1 : .72); else run(ctx);
     ctx.restore();
   }
 }
