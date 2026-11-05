@@ -1,10 +1,11 @@
 /* ============ TOON: thick-outline cartoon characters (big head, expressive face) + illustrated objects ============ */
-const INK = '#1c1b22';
+const INK0 = '#1c1b22';
+let INK = INK0;
 let TL = 1; /* line scale: keeps outlines ~7px on a 1080p frame at any shot size */
 
 function drawPerson(ctx, look, o, t) {
   const style = o.style || S.__drawP?.charStyle || 'toon';
-  return style === 'classic' ? drawPersonClassic(ctx, look, o, t) : drawToon(ctx, look, o, t);
+  return style === 'classic' ? drawPersonClassic(ctx, look, o, t) : style === 'cine' ? drawCinePerson(ctx, look, o, t) : drawToon(ctx, look, o, t);
 }
 
 /* origin at the feet, 100 units tall, facing right */
@@ -143,7 +144,7 @@ function drawToonHead(ctx, look, emotion, t, sil, skin, talking, ink, ell, fillS
     ctx.beginPath(); ctx.moveTo(8, cy - 8); ctx.quadraticCurveTo(24, cy - 10, 26, cy - 5); ctx.quadraticCurveTo(16, cy - 4, 8, cy - 5); ctx.closePath(); fillStroke(sil(shade(look.topColor || '#c0393b', -.15)));
     ell(0, cy - 21.5, 2.2, 1.4); fillStroke(cc, 1.4);
     if (look.capBrand && BRANDS[look.capBrand]) { ctx.save(); ctx.translate(-1, cy - 15); ctx.rotate(-.08); drawBrandBadge(ctx, look.capBrand, 0, 0, 6.4); ctx.restore(); }
-    else if (look.capText) { ctx.save(); ctx.translate(-1, cy - 14); ctx.rotate(-.08); ctx.beginPath(); rrp(ctx, -9, -3, 18, 6, 1); fillStroke(sil('#f4efe2'), 1.2); ctx.fillStyle = INK; ctx.font = `900 3.4px Poppins, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(look.capText).toUpperCase().slice(0, 10), 0, .3, 16); ctx.restore(); }
+    else if (look.capText) { ctx.save(); ctx.translate(-1, cy - 14); ctx.rotate(-.08); ctx.beginPath(); rrp(ctx, -9, -3, 18, 6, 1); fillStroke(sil('#f4efe2'), 1.2); ctx.fillStyle = INK0; ctx.font = `900 3.4px Poppins, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(look.capText).toUpperCase().slice(0, 10), 0, .3, 16); ctx.restore(); }
   }
   if (look.accessory === 'glasses') { ctx.lineWidth = 1.6 * TL; ctx.strokeStyle = ink; ell(-6, cy - 2, 5.6, 5); ctx.stroke(); ell(6.5, cy - 2, 5.6, 5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-.4, cy - 2); ctx.lineTo(.9, cy - 2); ctx.stroke(); }
   /* sweat when nervous */

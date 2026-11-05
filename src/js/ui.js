@@ -545,7 +545,7 @@ function renderPane() {
       ${P.mode === 'footage' ? `<label class="field"><span>Enquadramento do vídeo</span><select class="input" data-k="proj" data-f="fit"><option value="cover" ${P.fit === 'cover' ? 'selected' : ''}>Preencher (corta as bordas)</option><option value="blur" ${P.fit === 'blur' ? 'selected' : ''}>Inteiro com fundo desfocado</option></select></label>` : ''}</div>
       <div class="group"><label class="toggle"><span>Contador de cenas e título no quadro</span><input type="checkbox" data-k="proj" data-f="chrome" ${P.chrome ? 'checked' : ''}></label>
       <label class="toggle"><span>Barra de progresso no topo</span><input type="checkbox" data-k="proj" data-f="progressBar" ${P.progressBar ? 'checked' : ''}></label></div>`;
-    if (P.mode !== 'footage') h += `<div class="group"><label class="field"><span>Estilo dos personagens</span><select class="input" data-act="charStyle"><option value="toon" ${(P.charStyle || 'toon') === 'toon' ? 'selected' : ''}>Cartoon (contorno, cabeça grande)</option><option value="classic" ${P.charStyle === 'classic' ? 'selected' : ''}>Clássico (bonequinho)</option></select></label></div>`;
+    if (P.mode !== 'footage') h += `<div class="group"><label class="field"><span>Estilo dos personagens</span><select class="input" data-act="charStyle"><option value="cine" ${P.charStyle === 'cine' ? 'selected' : ''}>Cinemático (realista, sem contorno)</option><option value="toon" ${(P.charStyle || 'toon') === 'toon' ? 'selected' : ''}>Cartoon (contorno, cabeça grande)</option><option value="classic" ${P.charStyle === 'classic' ? 'selected' : ''}>Clássico (bonequinho)</option></select></label></div>`;
     if (P.mode === 'story') h += castPaneHTML(P);
   }
   if (TAB === 'post') h += postHTML(P);
@@ -613,7 +613,7 @@ function initInspector() {
   pane.addEventListener('change', async e => {
     const el = e.target, P = S.project, s = sceneOf();
     if (el.dataset.act === 'objType') { pushHistory('objeto'); s.p.item = normObj({ item: { type: el.value } }).item; afterChange(); }
-    if (el.dataset.act === 'charStyle') { pushHistory('estilo'); P.charStyle = el.value; afterChange(); }
+    if (el.dataset.act === 'charStyle') { pushHistory('estilo'); P.charStyle = el.value; if (el.value === 'cine' && P.captions.preset === 'toon') P.captions.preset = 'cine'; if (el.value !== 'cine' && P.captions.preset === 'cine') P.captions.preset = 'toon'; afterChange(); }
     if (el.dataset.act === 'kind') { pushHistory('modelo'); const k = el.value; s.p = { ...structuredClone(DEFAULT_PROPS[k]), ...pickCompatible(s.p, k) }; s.kind = k; s.dur = Math.max(s.dur, defaultDur(k, s.p) * .8); afterChange(); }
     if (el.dataset.act === 'ovl') { pushHistory('gráfico'); s.overlay = el.value ? normalizeOverlay({ kind: el.value, at: .3, dur: 3, p: el.value === 'broll' ? { kind: 'stat', ...DEFAULT_PROPS.stat } : { text: 'Seu *destaque* aqui', name: 'Seu nome', role: 'O que você faz', ...DEFAULT_PROPS.stat, title: 'Pontos', items: ['Primeiro', 'Segundo'] } }) : null; afterChange(); }
     if (el.dataset.act === 'brollKind') { pushHistory('modelo da tela'); const k = el.value; s.overlay.p = { ...structuredClone(DEFAULT_PROPS[k]), kind: k }; afterChange(); }

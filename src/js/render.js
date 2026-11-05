@@ -530,6 +530,7 @@ function drawCaptions(ctx, L, W, H, P, t) {
     ctx.lineWidth = size * .16; ctx.strokeStyle = '#000'; ctx.strokeText(up(w.text), 0, 0);
     ctx.fillStyle = acc; ctx.fillText(up(w.text), 0, 0); ctx.restore(); return;
   }
+  if (C.preset === 'cine') { drawCineCaptions(ctx, g, W, H, y, t, m, maxW); ctx.restore(); return; }
   if (C.preset === 'toon') {
     const items = g.words.map(w => ({ ...w, s: w.text.replace(/\*/g, '').toUpperCase() }));
     let size = m * .078; ctx.font = `900 ${size}px "Poppins", ${FALLBACK}`; const spc = () => ctx.measureText(' ').width;
@@ -579,7 +580,7 @@ function drawCaptions(ctx, L, W, H, P, t) {
 /* ---------- master frame ---------- */
 function drawFrame(ctx, P, t, opts = {}) {
   const [W, H] = ASPECTS[P.aspect]; const L = look(P);
-  ctx.save(); S.__drawP = P;
+  ctx.save(); S.__drawP = P; const cine = P.charStyle === 'cine' && P.mode !== 'footage'; INK = cine ? INK_CINE : INK0;
   const loc = locate(P, t);
   if (!loc) { drawBackground(ctx, L, W, H, t); ctx.restore(); return; }
   const s = loc.scene, total = opts.total ?? projectDuration(P);
@@ -605,9 +606,10 @@ function drawFrame(ctx, P, t, opts = {}) {
     if (flat && loc.index > 0 && loc.local < .26) { const e = ease.out(clamp(loc.local / .26)), sty = loc.index % 4; if (sty === 1 || sty === 3) ctx.translate((1 - e) * W * .28 * (sty === 1 ? 1 : -1), 0); else if (sty === 2) { ctx.translate(W / 2, H / 2); ctx.scale(1 + (1 - e) * .18, 1 + (1 - e) * .18); ctx.rotate((1 - e) * .03); ctx.translate(-W / 2, -H / 2); } }
     try { fn(ctx, L, W, H, loc.local, loc.dur, s.p || {}); } catch (e) { console.warn('scene draw', e); }
     ctx.restore();
+    if (cine) try { cinePost(ctx, W, H, s, loc.local); } catch (e) { console.warn('cine', e); }
     if (P.chrome && !flat) drawChrome(ctx, L, W, H, P, loc, total);
     if (loc.index > 0 && !flat) drawWipe(ctx, L, W, H, loc.local);
-    if (loc.index === 0 && P.mode !== 'footage') { const f = 1 - clamp(loc.local / .18); if (f > 0) { ctx.fillStyle = `rgba(255,255,255,${(f * .55).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } }
+    if (loc.index === 0 && P.mode !== 'footage' && !cine) { const f = 1 - clamp(loc.local / .18); if (f > 0) { ctx.fillStyle = `rgba(255,255,255,${(f * .55).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } }
     if (loc.index > 0 && flat) { const sty = loc.index % 4, f = 1 - clamp(loc.local / (sty === 0 ? .12 : .2)); if (f > 0) { if (sty === 0) { ctx.fillStyle = `rgba(255,255,255,${(f * .35).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } else if (sty !== 2) { ctx.save(); ctx.globalAlpha = f * .7; ctx.fillStyle = '#fff'; const r = seeded(loc.index); for (let i = 0; i < 14; i++) ctx.fillRect(0, r() * H, W, Math.max(2, H * .004)); ctx.restore(); } else { ctx.fillStyle = `rgba(0,0,0,${(f * .25).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } } }
   }
   drawCaptions(ctx, L, W, H, P, t);

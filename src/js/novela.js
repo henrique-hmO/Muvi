@@ -45,9 +45,9 @@ DRAW.talk = (ctx, L, W, H, t, d, p) => {
   /* cartoon coverage: every other line cuts to a close-up of whoever is talking */
   if ((p.camera || 'auto') === 'auto' && chars.length > 1 && cur && li % 2 === 1 && idx(cur.who) >= 0) {
     drawPlaceBlur(ctx, W, H, p.place || 'room', p.time || 'day', t, { z: 1.1, x: (xOf(idx(cur.who)) - .5) * W * .3 }, p, 7);
-    const j = idx(cur.who), c = chars[j], face = xOf(j) > avgX(chars, xOf) ? -1 : 1, chh = vertical ? H * 1.25 : H * 1.9, lt = t - times[li][0];
+    const j = idx(cur.who), c = chars[j], face = xOf(j) > avgX(chars, xOf) ? -1 : 1, cn = isCine(), chh = cn ? (vertical ? H * 2.2 : H * 3.2) : vertical ? H * 1.25 : H * 1.9, lt = t - times[li][0];
     let emo = cur.emotion || c.emotion || 'neutral';
-    ctx.save(); ctx.translate(W / 2 + face * W * .04, H * .42 + chh * .71 + (1 - ease.out(clamp(lt / .25))) * H * .03);
+    ctx.save(); ctx.translate(W / 2 + face * W * .04, H * .42 + chh * (cn ? .92 : .71) + (1 - ease.out(clamp(lt / .25))) * H * .03);
     drawPerson(ctx, castOf(P, c.who), { h: chh, facing: face, pose: 'stand', emotion: emo, talking: speaking, phase: j * 1.7 }, t);
     ctx.restore(); drawMood(ctx, W, H, p.mood || 'normal', t);
     if (cur.who !== 'narrator') { const who = castOf(P, cur.who); ctx.save(); ctx.font = `800 ${m * .036}px "Poppins", ${FALLBACK}`; const nm = String(who.name || '').toUpperCase(), tw = ctx.measureText(nm).width, hh = m * .066, x = W / 2 - tw / 2 - m * .03, y = H * (vertical ? .1 : .07); rr(ctx, x, y, tw + m * .06, hh, hh / 2); ctx.fillStyle = who.topColor || L.a1; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, m * .004); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(nm, x + m * .03, y + hh / 2 + 1); ctx.restore(); }
@@ -275,7 +275,7 @@ const NVO = { genre: 'Drama', seconds: 60 };
 function nvProject(nv, ep, scenes) {
   const P = newProject('story', nv.aspect || '9:16'); P.look = nv.look || OPT.look;
   P.series = { id: nv.id, n: ep.n, title: ep.title }; P.title = `${nv.title} · Ep ${ep.n}: ${ep.title}`.slice(0, 100);
-  P.cast = structuredClone(nv.cast); P.voice.ai = nv.narrator || 'eleven'; P.scenes = scenes; P.brief = nv.logline; P.captions.preset = 'doc';
+  P.cast = structuredClone(nv.cast); P.voice.ai = nv.narrator || 'eleven'; P.scenes = scenes; P.brief = nv.logline; P.captions.preset = P.charStyle === 'cine' ? 'cine' : 'doc';
   return P;
 }
 async function startNovela(useAI) {

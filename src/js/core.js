@@ -63,6 +63,7 @@ const LOOKS = {
 const ASPECTS = { '9:16': [1080, 1920], '1:1': [1080, 1080], '16:9': [1920, 1080] };
 
 const CAPTION_PRESETS = {
+  cine: { name: 'Cinema', desc: 'Maiúscula grossa, palavra-chave em caixa vermelha, próxima palavra entra desfocada' },
   doc: { name: 'Documentário', desc: 'Condensada, palavra ativa em vermelho' },
   news: { name: 'Notícia', desc: 'Frase grande e limpa, sem caixa' },
   pop: { name: 'Pop', desc: 'Maiúscula, contorno, palavra ativa colorida' },
@@ -139,7 +140,7 @@ function newProject(mode = 'explainer', aspect = '9:16') {
   return {
     id: uid(), title: 'Projeto sem nome', mode, aspect, fps: 30, look: 'moove',
     chrome: mode === 'explainer', progressBar: mode === 'story', fit: 'cover',
-    charStyle: 'toon', captions: { on: mode !== 'explainer', preset: mode === 'footage' ? 'box' : 'toon', pos: mode === 'footage' ? .74 : .8, upper: false, words: 3, accent: null },
+    charStyle: 'cine', captions: { on: mode !== 'explainer', preset: mode === 'footage' ? 'box' : 'cine', pos: mode === 'footage' ? .74 : .7, upper: false, words: 3, accent: null },
     music: { kind: mode === 'footage' ? 'none' : 'pulse', vol: mode === 'story' ? .22 : .35, buffer: null, name: '' },
     sfx: mode !== 'footage', cast: mode === 'story' ? structuredClone(DEFAULT_CAST) : undefined,
     voice: { preview: true, id: 'pm_alex', speed: 1.05 }, narration: null,

@@ -56,7 +56,7 @@ const POSE_NAMES = { stand: 'Em pé', walk: 'Andando', run: 'Correndo', point: '
 const EMO_NAMES = { neutral: 'Neutro', happy: 'Feliz', confident: 'Confiante', worried: 'Preocupado', sad: 'Triste', angry: 'Bravo', scared: 'Assustado', shocked: 'Chocado' };
 const PROP_NAMES = { none: 'Nada', phone: 'Celular', money: 'Dinheiro', briefcase: 'Maleta', bag: 'Saco de dinheiro', radio: 'Rádio', book: 'Livro', coffee: 'Café', clipboard: 'Prancheta', box: 'Caixa', gun: 'Arma', knife: 'Faca', cash: 'Notas de dinheiro', bottle: 'Garrafa', key: 'Chave', envelope: 'Envelope', laptop: 'Notebook' };
 const CAM_NAMES = { push: 'Aproximar', pull: 'Afastar', panL: 'Panorâmica ←', panR: 'Panorâmica →', shake: 'Tremor (impacto)', still: 'Parada' };
-const MOOD_NAMES = { normal: 'Normal', tense: 'Suspense', danger: 'Perigo', flashback: 'Lembrança', hope: 'Esperança' };
+const MOOD_NAMES = { normal: 'Normal', tense: 'Suspense', danger: 'Perigo', flashback: 'Lembrança', hope: 'Esperança', mystery: 'Mistério / terror (escuro)' };
 const ICON_NAMES = { '': 'Nenhum', money: 'Dinheiro', clock: 'Relógio', alert: 'Alerta', heart: 'Coração', x: 'Errado', check: 'Certo', arrow: 'Subindo', question: 'Dúvida' };
 const opt = (map, cur) => Object.entries(map).map(([k, v]) => `<option value="${esc(k)}" ${String(cur) === k ? 'selected' : ''}>${esc(v)}</option>`).join('');
 function storyPaneHTML(P, s) {
