@@ -10,10 +10,10 @@ async function loadFootage(file, onStep) {
   const url = URL.createObjectURL(file);
   const video = document.createElement('video');
   video.src = url; video.playsInline = true; video.setAttribute('aria-hidden', 'true');
-  video.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1'; document.body.append(video); video.preload = 'auto'; video.crossOrigin = 'anonymous';
+  video.style.cssText = 'position:fixed;left:0;top:0;width:64px;height:64px;opacity:0.01;pointer-events:none;z-index:-1'; document.body.append(video); video.preload = 'auto'; video.crossOrigin = 'anonymous';
   onStep('read', 'run');
-  await new Promise((res, rej) => { video.onloadedmetadata = res; video.onerror = () => rej(new Error('Esse arquivo de vídeo não abriu no navegador. Tente MP4 (H.264) ou WebM.')); });
-  await new Promise(res => { if (video.readyState >= 2) res(); else video.onloadeddata = res; });
+  try { await primeVideo(video, 'Esse arquivo de vídeo não abriu no navegador.'); } catch (e) { throw new Error(e.message); }
+  video.muted = false;
   onStep('read', 'done', `${video.videoWidth}×${video.videoHeight} · ${tc(video.duration)}`);
   onStep('audio', 'run');
   let audio = null;
@@ -103,7 +103,24 @@ function buildSRT(P) {
 const THUMBS = new Map();
 async function seekTo(video, t) {
   if (Math.abs(video.currentTime - t) < .001 && video.readyState >= 2) return;
-  await new Promise(res => { const on = () => { video.removeEventListener('seeked', on); res(); }; video.addEventListener('seeked', on); video.currentTime = t; });
+  /* iPhone Safari sometimes never fires "seeked": never hang, give up waiting after 2.5 s */
+  await new Promise(res => { let done = false; const fin = () => { if (done) return; done = true; video.removeEventListener('seeked', fin); clearTimeout(to); res(); }; const to = setTimeout(fin, 2500); video.addEventListener('seeked', fin); video.currentTime = t; });
+  if (video.readyState < 2) await new Promise(r => { const f = () => { video.removeEventListener('loadeddata', f); r(); }; video.addEventListener('loadeddata', f); setTimeout(f, 1500); });
+}
+/* iOS only loads video data after play() is called: open the file, nudge it, wait with a timeout */
+async function primeVideo(v, label = 'Esse vídeo não abriu no navegador.') {
+  v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.preload = 'auto';
+  await new Promise((res, rej) => {
+    if (v.readyState >= 1) return res();
+    const to = setTimeout(() => rej({ message: `${label} Tente exportar o vídeo como MP4 e enviar de novo.` }), 20000);
+    v.onloadedmetadata = () => { clearTimeout(to); res(); }; v.onerror = () => { clearTimeout(to); rej({ message: `${label} Use MP4 ou MOV (H.264).` }); };
+    try { v.load(); } catch (e) { }
+  });
+  if (v.readyState < 2) {
+    try { await v.play(); v.pause(); } catch (e) { }
+    await new Promise(res => { if (v.readyState >= 2) return res(); const f = () => { v.removeEventListener('loadeddata', f); v.removeEventListener('canplay', f); res(); }; v.addEventListener('loadeddata', f); v.addEventListener('canplay', f); setTimeout(f, 4000); });
+  }
+  try { v.pause(); v.currentTime = 0; } catch (e) { }
 }
 async function captureThumbs(P, scenes) {
   const v = S.video; if (!v) return;

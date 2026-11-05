@@ -5,11 +5,10 @@ const BP = { list: [], loaded: false, sel: '' };
 async function analyzeViralFile(file, onStep, signal) {
   const url = URL.createObjectURL(file);
   const v = document.createElement('video'); v.src = url; v.muted = true; v.playsInline = true; v.preload = 'auto';
-  v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1'; document.body.append(v);
+  v.style.cssText = 'position:fixed;left:0;top:0;width:64px;height:64px;opacity:.01;pointer-events:none;z-index:-1'; document.body.append(v);
   try {
     onStep('read', 'run');
-    await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej({ message: 'Esse vídeo não abriu no navegador. Use MP4 ou WebM.' }); });
-    await new Promise(res => (v.readyState >= 2 ? res() : (v.onloadeddata = res)));
+    await primeVideo(v, 'Esse vídeo não abriu no navegador.');
     const D = v.duration; if (!isFinite(D) || D < 2) throw { message: 'Vídeo curto demais para analisar.' };
     if (D > 600) throw { message: 'Use um vídeo de até 10 minutos.' };
     const W = v.videoWidth, H = v.videoHeight;
@@ -17,7 +16,7 @@ async function analyzeViralFile(file, onStep, signal) {
 
     /* 1. frames: luma grid + histogram per sample */
     onStep('cuts', 'run');
-    const fps = clamp(Math.floor(600 / D), 3, 10), n = Math.max(2, Math.floor(D * fps));
+    const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent), fps = clamp(Math.floor((mobile ? 300 : 600) / D), 2, mobile ? 6 : 10), n = Math.max(2, Math.floor(D * fps));
     const sw = 48, sh = Math.max(16, Math.round(48 * H / W)), c = document.createElement('canvas'); c.width = sw; c.height = sh;
     const x = c.getContext('2d', { willReadFrequently: true });
     const times = [], diffs = [], hds = [], lum = []; let prev = null, prevH = null;
