@@ -1,7 +1,7 @@
 /* ============ DOC: documentary infographic scenes + real photo scenes ============ */
 const ASSETS = new Map(); /* id -> {name, img} (session only) */
 const DOC_FONT = '"Anton", "Big Shoulders Display", Impact, "Arial Narrow", sans-serif';
-const DOC_ITEM_TYPES = ['calendar', 'screen', 'lock', 'people', 'card', 'stat', 'photo', 'icon'];
+const DOC_ITEM_TYPES = ['calendar', 'screen', 'lock', 'people', 'card', 'stat', 'photo', 'icon', 'news', 'study'];
 const DOC_SYMBOLS = ['R$', 'phone', 'doc', 'house', 'card', 'mail', 'car', 'law'];
 const DOC_ICONS = ['money', 'law', 'doc', 'alert', 'chart', 'house', 'phone', 'clock', 'gavel', 'globe', 'user'];
 const DOC_SHOWS = ['debate', 'news', 'chart', 'crowd', 'person', 'map'];
@@ -167,6 +167,44 @@ DOC_ITEM.photo = (ctx, it, x, y, w, h, k, t, A) => {
   if (it.label) { ctx.fillStyle = '#d6d6d6'; ctx.font = docFont(h * .08); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(it.label).toUpperCase(), x + w / 2, y + h * .94); }
 };
 
+/* news headline as it appears on a website (marker sweeps over the key words) */
+DOC_ITEM.news = (ctx, it, x, y, w, h, k, t, A) => {
+  const r = Math.min(w, h) * .03, pad = w * .05; ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = w * .04; ctx.shadowOffsetY = w * .015; rr(ctx, x, y, w, h, r); ctx.fillStyle = '#fbfaf7'; ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.save(); rr(ctx, x, y, w, h, r); ctx.clip();
+  const bar = h * .1; ctx.fillStyle = it.color || '#c4302b'; ctx.fillRect(x, y, w, bar);
+  ctx.fillStyle = '#fff'; ctx.font = sansFont(bar * .46, 800); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(String(it.site || 'NOTÍCIAS').toUpperCase(), x + pad, y + bar / 2);
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 3; i++) ctx.fillRect(x + w - pad - bar * .5, y + bar * (.3 + i * .17), bar * .5, bar * .07);
+  let cy = y + bar + h * .045; ctx.textBaseline = 'top';
+  if (it.section) { ctx.fillStyle = it.color || '#c4302b'; ctx.font = sansFont(h * .038, 800); ctx.fillText(String(it.section).toUpperCase(), x + pad, cy); cy += h * .065; }
+  const has = it.want || it.img, fs = Math.min(w * .075, h * (has ? .058 : .08)); ctx.font = `800 ${fs}px Georgia, "Times New Roman", serif`; ctx.fillStyle = '#16161a';
+  const lines = wrapPlain(ctx, it.title || '', w - pad * 2).slice(0, has ? 3 : 4), mark = String(it.mark || '').toLowerCase(), mk = ease.inOut(clamp((t - .5) / .6));
+  lines.forEach(l => {
+    const lw = ctx.measureText(l).width, hit = mark && l.toLowerCase().includes(mark);
+    if (hit) { const i0 = l.toLowerCase().indexOf(mark), x0 = ctx.measureText(l.slice(0, i0)).width, mw = ctx.measureText(l.slice(i0, i0 + mark.length)).width; ctx.fillStyle = 'rgba(255,214,0,.75)'; ctx.fillRect(x + pad + x0 - fs * .05, cy + fs * .12, (mw + fs * .1) * mk, fs * .95); }
+    else if (!mark && mk > 0 && l === lines[0]) { ctx.fillStyle = 'rgba(255,214,0,.6)'; ctx.fillRect(x + pad - fs * .05, cy + fs * .12, (lw + fs * .1) * mk, fs * .95); }
+    ctx.fillStyle = '#16161a'; ctx.fillText(l, x + pad, cy); cy += fs * 1.16;
+  });
+  if (it.sub) { ctx.fillStyle = '#5a5a62'; ctx.font = sansFont(fs * .52, 500); wrapPlain(ctx, it.sub, w - pad * 2).slice(0, 2).forEach(l => { ctx.fillText(l, x + pad, cy + fs * .1); cy += fs * .66; }); }
+  cy += fs * .3; ctx.fillStyle = '#8a8a92'; ctx.font = sansFont(fs * .4, 500); ctx.fillText(String(it.date || ''), x + pad, cy); cy += fs * .7;
+  if (has) { const ph = y + h - cy - pad * .6; if (ph > h * .12) { const img = it.img && ASSETS.get(it.img)?.img; if (img) { ctx.save(); ctx.beginPath(); ctx.rect(x + pad, cy, w - pad * 2, ph); ctx.clip(); drawCover(ctx, img, x + pad, cy, w - pad * 2, ph, 1 + .04 * clamp(t / 6)); ctx.restore(); } else { ctx.fillStyle = '#2a2b30'; ctx.fillRect(x + pad, cy, w - pad * 2, ph); photoSlot(ctx, x + pad, cy, w - pad * 2, ph, it.want, r * .5); } } }
+  ctx.restore(); ctx.restore();
+};
+/* research card: institution, finding and an animated bar */
+DOC_ITEM.study = (ctx, it, x, y, w, h, k, t, A) => {
+  const r = Math.min(w, h) * .03, pad = w * .06; ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = w * .04; ctx.shadowOffsetY = w * .015; rr(ctx, x, y, w, h, r); ctx.fillStyle = '#f4f1ea'; ctx.fill(); ctx.shadowColor = 'transparent';
+  let cy = y + pad * .9; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const tag = h * .05; ctx.font = sansFont(tag * .62, 800); const tw = ctx.measureText('PESQUISA').width + tag; rr(ctx, x + pad, cy, tw, tag, tag * .25); ctx.fillStyle = '#1f3a6b'; ctx.fill(); ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText('PESQUISA', x + pad + tag * .5, cy + tag / 2);
+  ctx.fillStyle = '#4a4a52'; ctx.font = sansFont(tag * .62, 700); ctx.fillText(String([it.org, it.year].filter(Boolean).join(' · ')).toUpperCase(), x + pad + tw + tag * .4, cy + tag / 2); cy += tag * 1.7; ctx.textBaseline = 'top';
+  const fs = Math.min(w * .075, h * .065); ctx.fillStyle = '#16161a'; ctx.font = `800 ${fs}px Georgia, "Times New Roman", serif`; wrapPlain(ctx, it.title || '', w - pad * 2).slice(0, 3).forEach(l => { ctx.fillText(l, x + pad, cy); cy += fs * 1.15; });
+  const v = parseFloat(String(it.value || '').replace(',', '.')), pct = String(it.suffix || '%') === '%' && Number.isFinite(v) ? clamp(v / 100) : 1, a = ease.out(clamp((t - .4) / .9));
+  cy += fs * .4; const big = Math.min(h * .2, w * .2); ctx.fillStyle = '#c4302b'; ctx.font = docFont(big); const shown = Number.isFinite(v) ? (Math.round(v * a * 10) / 10).toString().replace('.', ',') : String(it.value || ''); ctx.fillText(`${shown}${it.suffix ?? '%'}`, x + pad, cy); cy += big * 1.05;
+  if (it.label) { ctx.fillStyle = '#3a3a42'; ctx.font = sansFont(fs * .55, 600); wrapPlain(ctx, it.label, w - pad * 2).slice(0, 2).forEach(l => { ctx.fillText(l, x + pad, cy); cy += fs * .7; }); }
+  const by = Math.min(cy + fs * .3, y + h - pad - h * .05), bw = w - pad * 2, bh = h * .045; rr(ctx, x + pad, by, bw, bh, bh / 2); ctx.fillStyle = '#ddd8cc'; ctx.fill(); if (pct * a > 0) { rr(ctx, x + pad, by, Math.max(bh, bw * pct * a), bh, bh / 2); ctx.fillStyle = '#c4302b'; ctx.fill(); }
+  ctx.restore();
+};
+
 /* ---------- the doc scene ---------- */
 DRAW.doc = (ctx, L, W, H, t, d, p) => {
   const m = Math.min(W, H), vertical = H > W * 1.2, night = p.bg === 'night', A = night ? '#f2b33d' : DOC_RED;
@@ -180,11 +218,11 @@ DRAW.doc = (ctx, L, W, H, t, d, p) => {
   const items = (p.items || []).slice(0, 4), n = items.length;
   const floor = H * .8, bottom = vertical ? H * (p.crowd ? .62 : .66) : H * (p.crowd ? .62 : .74);
   if (n) {
-    const weight = it => (it.type === 'screen' ? 2 : 1);
+    const weight = it => (it.type === 'screen' || it.type === 'news' || it.type === 'study' ? 2 : 1);
     let rows;
     if (!vertical) rows = [items];
     else { rows = []; let cur = []; let wsum = 0; for (const it of items) { const wv = weight(it); if (wsum + wv > 2 && cur.length) { rows.push(cur); cur = []; wsum = 0; } cur.push(it); wsum += wv; } if (cur.length) rows.push(cur); }
-    const gap = m * .045, areaH = bottom - top, rowH = Math.min((areaH - gap * (rows.length - 1)) / rows.length, vertical ? H * .3 : H * .55);
+    const gap = m * .045, areaH = bottom - top, rowH = Math.min((areaH - gap * (rows.length - 1)) / rows.length, vertical ? H * (items.some(it => it.type === 'news' || it.type === 'study') ? .5 : .3) : H * .55);
     const totalH = rows.length * rowH + (rows.length - 1) * gap; let ry = top + (areaH - totalH) / 2;
     let idx = 0;
     for (const row of rows) {
@@ -232,6 +270,8 @@ function normDoc(p) {
     if (type === 'icon') Object.assign(o, { name: pick(it.name, DOC_ICONS, 'alert'), label: S(it.label, 22) });
     if (type === 'stat') Object.assign(o, { value: S(it.value, 10), prefix: S(it.prefix, 4), suffix: S(it.suffix, 6), label: S(it.label, 40) });
     if (type === 'card') Object.assign(o, { kicker: S(it.kicker, 28), title: S(it.title, 40), text: S(it.text, 110), footer: S(it.footer, 40), icon: pick(it.icon, DOC_ICONS, 'doc'), tone: pick(it.tone, Object.keys(DOC_TONES), 'amber'), want: S(it.want, 80), img: S(it.img, 20) });
+    if (type === 'news') Object.assign(o, { site: S(it.site, 24), section: S(it.section, 24), title: S(it.title, 140), sub: S(it.sub, 140), date: S(it.date, 40), mark: S(it.mark, 40), want: S(it.want, 80), img: S(it.img, 20) });
+    if (type === 'study') Object.assign(o, { org: S(it.org, 40), year: S(it.year, 8), title: S(it.title, 120), value: S(it.value, 8), suffix: S(it.suffix ?? '%', 6), label: S(it.label, 80) });
     if (type === 'photo') Object.assign(o, { want: S(it.want, 80), label: S(it.label, 24), grade: pick(it.grade, ['doc', 'bw', 'warm', 'none'], 'doc'), img: S(it.img, 20) });
     return o;
   });
@@ -247,7 +287,7 @@ function photoSlots(P) {
   const out = [];
   P.scenes.forEach((s, i) => {
     if (s.kind === 'photo') out.push({ i, ref: s.p, want: s.p.want, img: s.p.img });
-    if (s.kind === 'doc') (s.p.items || []).forEach(it => { if (it.type === 'photo' || (it.type === 'card' && (it.want || it.img))) out.push({ i, ref: it, want: it.want, img: it.img }); });
+    if (s.kind === 'doc') (s.p.items || []).forEach(it => { if (it.type === 'photo' || ((it.type === 'card' || it.type === 'news') && (it.want || it.img))) out.push({ i, ref: it, want: it.want, img: it.img }); });
   });
   return out;
 }
