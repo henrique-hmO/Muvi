@@ -270,7 +270,7 @@ function normDoc(p) {
     if (type === 'icon') Object.assign(o, { name: pick(it.name, DOC_ICONS, 'alert'), label: S(it.label, 22) });
     if (type === 'stat') Object.assign(o, { value: S(it.value, 10), prefix: S(it.prefix, 4), suffix: S(it.suffix, 6), label: S(it.label, 40) });
     if (type === 'card') Object.assign(o, { kicker: S(it.kicker, 28), title: S(it.title, 40), text: S(it.text, 110), footer: S(it.footer, 40), icon: pick(it.icon, DOC_ICONS, 'doc'), tone: pick(it.tone, Object.keys(DOC_TONES), 'amber'), want: S(it.want, 80), img: S(it.img, 20) });
-    if (type === 'news') Object.assign(o, { site: S(it.site, 24), section: S(it.section, 24), title: S(it.title, 140), sub: S(it.sub, 140), date: S(it.date, 40), mark: S(it.mark, 40), want: S(it.want, 80), img: S(it.img, 20) });
+    if (type === 'news') Object.assign(o, { site: S(it.site, 24), section: S(it.section, 24), title: S(it.title, 140), sub: S(it.sub, 140), date: S(it.date, 40), mark: S(it.mark, 40), want: S(it.want, 80), img: S(it.img, 20), url: /^https?:\/\//.test(it.url || '') ? S(it.url, 600) : '' });
     if (type === 'study') Object.assign(o, { org: S(it.org, 40), year: S(it.year, 8), title: S(it.title, 120), value: S(it.value, 8), suffix: S(it.suffix ?? '%', 6), label: S(it.label, 80) });
     if (type === 'photo') Object.assign(o, { want: S(it.want, 80), label: S(it.label, 24), grade: pick(it.grade, ['doc', 'bw', 'warm', 'none'], 'doc'), img: S(it.img, 20) });
     return o;

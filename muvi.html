@@ -415,6 +415,7 @@ main { min-height: calc(100% - var(--top)); }
             <div class="field"><span>Duração</span><div class="chips" data-opt="seconds"></div><input class="input" id="customSec" type="number" min="5" step="5" placeholder="Segundos" hidden aria-label="Duração em segundos"></div>
             <div class="field"><span>Tom</span><div class="chips" data-opt="tone"></div></div>
             <div class="field"><span>Iluminação</span><div class="chips" data-opt="clima"></div></div>
+            <div class="field"><span>Assunto real</span><div class="chips" data-opt="news"></div></div>
             <div class="field"><span>Visual</span><div class="swatches" data-opt="look"></div></div>
             <div class="field" style="grid-column:1/-1"><span>Canal (marcas fictícias do nicho aparecem no vídeo)</span><div class="chips" data-chpick></div></div>
             <div class="field" style="grid-column:1/-1"><span>Estrutura viral (opcional): o roteiro copia o gancho e o ritmo de um vídeo que bombou</span><div class="chips" data-bppick></div></div>
@@ -3866,7 +3867,7 @@ function normDoc(p) {
     if (type === 'icon') Object.assign(o, { name: pick(it.name, DOC_ICONS, 'alert'), label: S(it.label, 22) });
     if (type === 'stat') Object.assign(o, { value: S(it.value, 10), prefix: S(it.prefix, 4), suffix: S(it.suffix, 6), label: S(it.label, 40) });
     if (type === 'card') Object.assign(o, { kicker: S(it.kicker, 28), title: S(it.title, 40), text: S(it.text, 110), footer: S(it.footer, 40), icon: pick(it.icon, DOC_ICONS, 'doc'), tone: pick(it.tone, Object.keys(DOC_TONES), 'amber'), want: S(it.want, 80), img: S(it.img, 20) });
-    if (type === 'news') Object.assign(o, { site: S(it.site, 24), section: S(it.section, 24), title: S(it.title, 140), sub: S(it.sub, 140), date: S(it.date, 40), mark: S(it.mark, 40), want: S(it.want, 80), img: S(it.img, 20) });
+    if (type === 'news') Object.assign(o, { site: S(it.site, 24), section: S(it.section, 24), title: S(it.title, 140), sub: S(it.sub, 140), date: S(it.date, 40), mark: S(it.mark, 40), want: S(it.want, 80), img: S(it.img, 20), url: /^https?:\/\//.test(it.url || '') ? S(it.url, 600) : '' });
     if (type === 'study') Object.assign(o, { org: S(it.org, 40), year: S(it.year, 8), title: S(it.title, 120), value: S(it.value, 8), suffix: S(it.suffix ?? '%', 6), label: S(it.label, 80) });
     if (type === 'photo') Object.assign(o, { want: S(it.want, 80), label: S(it.label, 24), grade: pick(it.grade, ['doc', 'bw', 'warm', 'none'], 'doc'), img: S(it.img, 20) });
     return o;
@@ -4121,7 +4122,7 @@ const DOC_GUIDE = `Além das cenas com personagem, você pode usar dois formatos
      {"type":"stat","value":"40","suffix":"%","label":"DOS CASOS"},
      {"type":"card","kicker":"INQUÉRITO 1 · STF","title":"Lavagem de dinheiro","text":"uma linha de contexto","footer":"RELATOR: ...","icon":"${DOC_ICONS.join('|')}","tone":"amber|blue|red|gray","want":"foto de <pessoa/lugar>" (opcional: pede uma foto real para o círculo do cartão)},
      {"type":"photo","want":"descrição exata da foto real que o editor deve enviar","label":"legenda curta","grade":"doc|bw|warm|none"},
-     {"type":"news","site":"NOME DO SITE","section":"ECONOMIA","title":"manchete da matéria","mark":"trecho da manchete que fica grifado em amarelo","sub":"linha fina","date":"05/11/2026","want":"foto da matéria (opcional)"} (print de matéria/notícia: ocupa a largura toda),
+     {"type":"news","site":"NOME DO SITE","section":"ECONOMIA","title":"manchete da matéria","mark":"trecho da manchete que fica grifado em amarelo","sub":"linha fina","date":"05/11/2026","url":"link da matéria (das NOTÍCIAS REAIS, se houver)","want":"foto da matéria (opcional)"} (print de matéria/notícia: ocupa a largura toda),
      {"type":"study","org":"Universidade X","year":"2025","title":"o que a pesquisa descobriu","value":"62","suffix":"%","label":"das pessoas ..."} (cartão de pesquisa com número e barra animada) ],
    REGRA: "news" e "study" só com fatos, veículos, instituições e números que você sabe que são reais; nunca invente manchete, site ou dado. Na dúvida use "card" ou "stat" sem citar veículo.
    "crowd":0 a 16 (fileira de bonecos no chão = população, vítimas, eleitores),
@@ -4945,7 +4946,7 @@ const ITEM_FIELDS = {
   icon: [['name', 'Ícone', Object.fromEntries(DOC_ICONS.map(i => [i, i]))], ['label', 'Rótulo']],
   stat: [['value', 'Valor'], ['prefix', 'Prefixo'], ['suffix', 'Sufixo'], ['label', 'Rótulo']],
   card: [['kicker', 'Rótulo de cima'], ['title', 'Título'], ['text', 'Texto'], ['footer', 'Rodapé'], ['icon', 'Ícone', Object.fromEntries(DOC_ICONS.map(i => [i, i]))], ['tone', 'Cor', { amber: 'Âmbar', blue: 'Azul', red: 'Vermelho', gray: 'Cinza' }], ['want', 'Foto pedida (opcional)']],
-  news: [['site', 'Site / veículo'], ['section', 'Editoria'], ['title', 'Manchete'], ['mark', 'Trecho grifado'], ['sub', 'Linha fina'], ['date', 'Data'], ['want', 'Foto da matéria (opcional)']],
+  news: [['site', 'Site / veículo'], ['section', 'Editoria'], ['title', 'Manchete'], ['mark', 'Trecho grifado'], ['sub', 'Linha fina'], ['date', 'Data'], ['url', 'Link da matéria'], ['want', 'Foto da matéria (opcional)']],
   study: [['org', 'Instituição'], ['year', 'Ano'], ['title', 'O que descobriu'], ['value', 'Número'], ['suffix', 'Unidade (%, x, mil)'], ['label', 'Explicação do número']],
   photo: [['want', 'Que foto é'], ['label', 'Legenda'], ['grade', 'Tratamento', { doc: 'Documentário', bw: 'Preto e branco', warm: 'Quente', none: 'Original' }]],
 };
@@ -4983,10 +4984,16 @@ function docPaneHTML(P, s) {
   if ((p.items || []).length < 4) h += `<div class="group"><button class="btn sm" type="button" data-act="itAdd">+ Elemento</button></div>`;
   return h + `<div class="group"><h4>Refazer com o Claude</h4><input class="input" id="paneRedo" placeholder="Ex.: mostre com cadeados e uma TV ao vivo"><button class="btn ai sm" data-act="redo" type="button">Refazer cena</button></div>`;
 }
+const gNews = q => `https://www.google.com/search?tbm=nws&q=${encodeURIComponent(q)}`, gImg = q => `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(q)}`;
+const linkBtn = (href, label) => `<a class="btn sm" href="${esc(href)}" target="_blank" rel="noopener" style="text-decoration:none">${label}</a>`;
+function newsFoundHTML(P) {
+  if (!P.newsRefs?.length) return '';
+  return `<div class="group"><h4>Notícias reais usadas na pesquisa</h4>${P.newsRefs.map(n => `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span style="font-size:12.5px;min-width:0;overflow-wrap:anywhere">${esc(n.title)} <span class="muted">· ${esc(n.site)} ${esc(n.date)}</span></span>${linkBtn(n.url, 'Abrir')}</div>`).join('')}</div>`;
+}
 function photosPaneHTML(P) {
-  const slots = photoSlots(P); if (!slots.length) return '';
+  const slots = photoSlots(P); if (!slots.length) return newsFoundHTML(P);
   return `<div class="group"><h4>Fotos reais pedidas</h4><p class="muted" style="margin:0;font-size:12px">Envie cada foto. Use imagens que você tem direito de usar e cite a fonte na cena.</p>
-    ${slots.map((sl, k) => { const has = sl.img && ASSETS.get(sl.img); return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span style="font-size:12.5px;min-width:0;overflow-wrap:anywhere"><b class="mono" style="font-size:11px">${String(sl.i + 1).padStart(2, '0')}</b> ${esc(sl.want || 'foto')} ${has ? '<span style="color:var(--success)">✓</span>' : ''}</span>${photoInput('slot', k, !!has)}</div>`; }).join('')}</div>`;
+    ${slots.map((sl, k) => { const has = sl.img && ASSETS.get(sl.img); return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span style="font-size:12.5px;min-width:0;overflow-wrap:anywhere"><b class="mono" style="font-size:11px">${String(sl.i + 1).padStart(2, '0')}</b> ${esc(sl.want || 'foto')} ${has ? '<span style="color:var(--success)">✓</span>' : ''}</span>${photoInput('slot', k, !!has)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 6px">${sl.ref.url ? linkBtn(sl.ref.url, '📰 Abrir matéria') : sl.ref.title ? linkBtn(gNews(sl.ref.title), '📰 Achar matéria') : ''}${linkBtn(gImg(sl.want || sl.ref.title || ''), '🖼️ Achar foto')}</div>`; }).join('')}<p class="muted" style="margin:0;font-size:12px">No celular: toque em Achar foto, segure a imagem, Salvar em Fotos e volte aqui em Enviar foto. Um print da matéria também serve.</p></div>${newsFoundHTML(P)}`;
 }
 async function handlePhotoInput(el) {
   const P = S.project, file = el.files?.[0]; if (!file) return;
@@ -5213,6 +5220,21 @@ function initTrends() {
 }
 function openTrends() { $('#trends').hidden = false; $('#trendsScrim').hidden = false; renderTrends(); if (!TR.items.length && !TR.err) loadTrends(false); setTimeout(() => $('#trendsClose').focus(), 30); }
 function closeTrends() { $('#trends').hidden = true; $('#trendsScrim').hidden = true; $('#trendsBtn').focus(); }
+
+/* real headlines for factual scripts: Google News RSS through Firecrawl (1 call) */
+async function searchNews(topic) {
+  const mcp = await window.claude?.use?.('mcp'); if (!mcp) return [];
+  const q = String(topic).split(/[\n.!?]/).find(x => x.trim().length > 3)?.replace(/\s+/g, ' ').trim().slice(0, 100) || String(topic).slice(0, 100);
+  const r = await mcp.callTool('Firecrawl', 'firecrawl_scrape', { url: `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`, formats: ['rawHtml'], maxAge: 0, objective: 'Achar notícias reais sobre o tema do vídeo para citar manchetes verdadeiras' }, { cache: { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 } });
+  const xml = findXML(r); if (!xml) return [];
+  const doc = new DOMParser().parseFromString(xml, 'text/xml'), out = [];
+  doc.querySelectorAll('item').forEach(it => { if (out.length >= 8) return; const g = sel => it.querySelector(sel)?.textContent?.trim() || ''; let title = g('title'); const site = g('source'); if (site && title.endsWith(' - ' + site)) title = title.slice(0, -(site.length + 3)); const d = new Date(g('pubDate')); out.push({ title, site, url: g('link'), date: isNaN(d) ? '' : d.toLocaleDateString('pt-BR') }); });
+  return out;
+}
+function newsBrief(list) {
+  if (!list?.length) return '';
+  return `\nNOTÍCIAS REAIS ENCONTRADAS AGORA NO GOOGLE NOTÍCIAS (se o assunto for real, use-as nos cartões "news" copiando título, site e data EXATAMENTE e coloque "url" com o link; não invente outras):\n${list.map((n, i) => `${i + 1}) ${n.title} | ${n.site} | ${n.date} | ${n.url}`).join('\n')}\n`;
+}
 
 /* ---- novela.js ---- */
 /* ============ NOVELINHA: dialogue scenes, per-character voices, saved series with episodes ============ */
@@ -5998,7 +6020,7 @@ function openViralModal() {
 
 /* ---- ui.js ---- */
 /* ============ UI: views, player, board, studio, timeline ============ */
-const OPT = { clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
+const OPT = { news: 'sim', clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
 const EXAMPLES = [
   'Explique em 1 minuto o que é um atendente de IA no WhatsApp e por que clínicas estão usando',
   'Os 4 passos para criar uma landing page que converte, para pequenos negócios',
@@ -6059,6 +6081,7 @@ function initHome() {
   chipSet('[data-opt="seconds"]', DUR_CHOICES.map(([v, l]) => [v, l]), 'seconds', v => { $('#customSec').hidden = v !== 0; if (v === 0) $('#customSec').focus(); });
   chipSet('[data-opt="tone"]', TONES.map(t => [t, t]), 'tone');
   chipSet('[data-opt="clima"]', CLIMAS, 'clima');
+  chipSet('[data-opt="news"]', [['sim', '📰 Buscar notícias reais'], ['nao', 'Não buscar']], 'news');
   chipSet('[data-opt="aspectF"]', Object.keys(ASPECTS).map(a => [a, a]), 'aspectF');
   chipSet('[data-opt="capPreset"]', Object.entries(CAPTION_PRESETS).map(([k, v]) => [k, v.name]), 'capPreset');
   swatchSet('[data-opt="look"]', 'look'); swatchSet('[data-opt="lookF"]', 'lookF');
@@ -6140,14 +6163,15 @@ async function startExplainer(useAI) {
   step('brief', 'done', `${OPT.aspect} · ${fmtDur(seconds)} · ${OPT.tone}`); step('write', 'run');
   FLOW = new AbortController(); const live = $('#liveText'); live.hidden = false; live.textContent = 'Pensando…';
   try {
-    let chap = '';
+    let chap = '', nb = '';
+    if (OPT.news === 'sim') { live.textContent = 'Buscando notícias reais do assunto…'; try { P.newsRefs = await searchNews(brief); nb = newsBrief(P.newsRefs); } catch (e) { console.warn('news', e); } }
     const onText = ({ text }) => {
       const n = (text.match(story ? /"say"\s*:/g : /"kind"\s*:/g) || []).length; const last = [...text.matchAll(/"(?:say|text|title|term|quote)"\s*:\s*"([^"]{3,120})"/g)].pop();
       live.textContent = `${chap}${n} ${n === 1 ? 'cena escrita' : 'cenas escritas'}${last ? `\n“${last[1].replace(/\*/g, '')}”` : ''}`;
     };
     const r = story
-      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
-      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
+      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima) + nb, { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
+      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima) + nb, { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
     if (r.cast) P.cast = r.cast; if (r.post) P.post = r.post; if (BP.sel) P.blueprint = { id: BP.sel, name: bpOf(BP.sel)?.bp.name }; if (CH.sel) P.channel = { id: CH.sel, name: chOf(CH.sel)?.name };
     step('write', 'done', `${r.scenes.length} cenas · ${fmtDur(r.scenes.reduce((a, s) => a + s.dur, 0))}`); step('build', 'run');
     await fontsReady(); P.title = r.title || 'Explicativo'; P.scenes = r.scenes; step('build', 'done');

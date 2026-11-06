@@ -1,5 +1,5 @@
 /* ============ UI: views, player, board, studio, timeline ============ */
-const OPT = { clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
+const OPT = { news: 'sim', clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
 const EXAMPLES = [
   'Explique em 1 minuto o que é um atendente de IA no WhatsApp e por que clínicas estão usando',
   'Os 4 passos para criar uma landing page que converte, para pequenos negócios',
@@ -60,6 +60,7 @@ function initHome() {
   chipSet('[data-opt="seconds"]', DUR_CHOICES.map(([v, l]) => [v, l]), 'seconds', v => { $('#customSec').hidden = v !== 0; if (v === 0) $('#customSec').focus(); });
   chipSet('[data-opt="tone"]', TONES.map(t => [t, t]), 'tone');
   chipSet('[data-opt="clima"]', CLIMAS, 'clima');
+  chipSet('[data-opt="news"]', [['sim', '📰 Buscar notícias reais'], ['nao', 'Não buscar']], 'news');
   chipSet('[data-opt="aspectF"]', Object.keys(ASPECTS).map(a => [a, a]), 'aspectF');
   chipSet('[data-opt="capPreset"]', Object.entries(CAPTION_PRESETS).map(([k, v]) => [k, v.name]), 'capPreset');
   swatchSet('[data-opt="look"]', 'look'); swatchSet('[data-opt="lookF"]', 'lookF');
@@ -141,14 +142,15 @@ async function startExplainer(useAI) {
   step('brief', 'done', `${OPT.aspect} · ${fmtDur(seconds)} · ${OPT.tone}`); step('write', 'run');
   FLOW = new AbortController(); const live = $('#liveText'); live.hidden = false; live.textContent = 'Pensando…';
   try {
-    let chap = '';
+    let chap = '', nb = '';
+    if (OPT.news === 'sim') { live.textContent = 'Buscando notícias reais do assunto…'; try { P.newsRefs = await searchNews(brief); nb = newsBrief(P.newsRefs); } catch (e) { console.warn('news', e); } }
     const onText = ({ text }) => {
       const n = (text.match(story ? /"say"\s*:/g : /"kind"\s*:/g) || []).length; const last = [...text.matchAll(/"(?:say|text|title|term|quote)"\s*:\s*"([^"]{3,120})"/g)].pop();
       live.textContent = `${chap}${n} ${n === 1 ? 'cena escrita' : 'cenas escritas'}${last ? `\n“${last[1].replace(/\*/g, '')}”` : ''}`;
     };
     const r = story
-      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
-      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
+      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima) + nb, { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
+      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima) + nb, { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
     if (r.cast) P.cast = r.cast; if (r.post) P.post = r.post; if (BP.sel) P.blueprint = { id: BP.sel, name: bpOf(BP.sel)?.bp.name }; if (CH.sel) P.channel = { id: CH.sel, name: chOf(CH.sel)?.name };
     step('write', 'done', `${r.scenes.length} cenas · ${fmtDur(r.scenes.reduce((a, s) => a + s.dur, 0))}`); step('build', 'run');
     await fontsReady(); P.title = r.title || 'Explicativo'; P.scenes = r.scenes; step('build', 'done');

@@ -80,3 +80,18 @@ function initTrends() {
 }
 function openTrends() { $('#trends').hidden = false; $('#trendsScrim').hidden = false; renderTrends(); if (!TR.items.length && !TR.err) loadTrends(false); setTimeout(() => $('#trendsClose').focus(), 30); }
 function closeTrends() { $('#trends').hidden = true; $('#trendsScrim').hidden = true; $('#trendsBtn').focus(); }
+
+/* real headlines for factual scripts: Google News RSS through Firecrawl (1 call) */
+async function searchNews(topic) {
+  const mcp = await window.claude?.use?.('mcp'); if (!mcp) return [];
+  const q = String(topic).split(/[\n.!?]/).find(x => x.trim().length > 3)?.replace(/\s+/g, ' ').trim().slice(0, 100) || String(topic).slice(0, 100);
+  const r = await mcp.callTool('Firecrawl', 'firecrawl_scrape', { url: `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`, formats: ['rawHtml'], maxAge: 0, objective: 'Achar notícias reais sobre o tema do vídeo para citar manchetes verdadeiras' }, { cache: { staleTime: 30 * 60 * 1000, gcTime: 60 * 60 * 1000 } });
+  const xml = findXML(r); if (!xml) return [];
+  const doc = new DOMParser().parseFromString(xml, 'text/xml'), out = [];
+  doc.querySelectorAll('item').forEach(it => { if (out.length >= 8) return; const g = sel => it.querySelector(sel)?.textContent?.trim() || ''; let title = g('title'); const site = g('source'); if (site && title.endsWith(' - ' + site)) title = title.slice(0, -(site.length + 3)); const d = new Date(g('pubDate')); out.push({ title, site, url: g('link'), date: isNaN(d) ? '' : d.toLocaleDateString('pt-BR') }); });
+  return out;
+}
+function newsBrief(list) {
+  if (!list?.length) return '';
+  return `\nNOTÍCIAS REAIS ENCONTRADAS AGORA NO GOOGLE NOTÍCIAS (se o assunto for real, use-as nos cartões "news" copiando título, site e data EXATAMENTE e coloque "url" com o link; não invente outras):\n${list.map((n, i) => `${i + 1}) ${n.title} | ${n.site} | ${n.date} | ${n.url}`).join('\n')}\n`;
+}

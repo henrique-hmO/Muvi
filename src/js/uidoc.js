@@ -7,7 +7,7 @@ const ITEM_FIELDS = {
   icon: [['name', 'Ícone', Object.fromEntries(DOC_ICONS.map(i => [i, i]))], ['label', 'Rótulo']],
   stat: [['value', 'Valor'], ['prefix', 'Prefixo'], ['suffix', 'Sufixo'], ['label', 'Rótulo']],
   card: [['kicker', 'Rótulo de cima'], ['title', 'Título'], ['text', 'Texto'], ['footer', 'Rodapé'], ['icon', 'Ícone', Object.fromEntries(DOC_ICONS.map(i => [i, i]))], ['tone', 'Cor', { amber: 'Âmbar', blue: 'Azul', red: 'Vermelho', gray: 'Cinza' }], ['want', 'Foto pedida (opcional)']],
-  news: [['site', 'Site / veículo'], ['section', 'Editoria'], ['title', 'Manchete'], ['mark', 'Trecho grifado'], ['sub', 'Linha fina'], ['date', 'Data'], ['want', 'Foto da matéria (opcional)']],
+  news: [['site', 'Site / veículo'], ['section', 'Editoria'], ['title', 'Manchete'], ['mark', 'Trecho grifado'], ['sub', 'Linha fina'], ['date', 'Data'], ['url', 'Link da matéria'], ['want', 'Foto da matéria (opcional)']],
   study: [['org', 'Instituição'], ['year', 'Ano'], ['title', 'O que descobriu'], ['value', 'Número'], ['suffix', 'Unidade (%, x, mil)'], ['label', 'Explicação do número']],
   photo: [['want', 'Que foto é'], ['label', 'Legenda'], ['grade', 'Tratamento', { doc: 'Documentário', bw: 'Preto e branco', warm: 'Quente', none: 'Original' }]],
 };
@@ -45,10 +45,16 @@ function docPaneHTML(P, s) {
   if ((p.items || []).length < 4) h += `<div class="group"><button class="btn sm" type="button" data-act="itAdd">+ Elemento</button></div>`;
   return h + `<div class="group"><h4>Refazer com o Claude</h4><input class="input" id="paneRedo" placeholder="Ex.: mostre com cadeados e uma TV ao vivo"><button class="btn ai sm" data-act="redo" type="button">Refazer cena</button></div>`;
 }
+const gNews = q => `https://www.google.com/search?tbm=nws&q=${encodeURIComponent(q)}`, gImg = q => `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(q)}`;
+const linkBtn = (href, label) => `<a class="btn sm" href="${esc(href)}" target="_blank" rel="noopener" style="text-decoration:none">${label}</a>`;
+function newsFoundHTML(P) {
+  if (!P.newsRefs?.length) return '';
+  return `<div class="group"><h4>Notícias reais usadas na pesquisa</h4>${P.newsRefs.map(n => `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span style="font-size:12.5px;min-width:0;overflow-wrap:anywhere">${esc(n.title)} <span class="muted">· ${esc(n.site)} ${esc(n.date)}</span></span>${linkBtn(n.url, 'Abrir')}</div>`).join('')}</div>`;
+}
 function photosPaneHTML(P) {
-  const slots = photoSlots(P); if (!slots.length) return '';
+  const slots = photoSlots(P); if (!slots.length) return newsFoundHTML(P);
   return `<div class="group"><h4>Fotos reais pedidas</h4><p class="muted" style="margin:0;font-size:12px">Envie cada foto. Use imagens que você tem direito de usar e cite a fonte na cena.</p>
-    ${slots.map((sl, k) => { const has = sl.img && ASSETS.get(sl.img); return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span style="font-size:12.5px;min-width:0;overflow-wrap:anywhere"><b class="mono" style="font-size:11px">${String(sl.i + 1).padStart(2, '0')}</b> ${esc(sl.want || 'foto')} ${has ? '<span style="color:var(--success)">✓</span>' : ''}</span>${photoInput('slot', k, !!has)}</div>`; }).join('')}</div>`;
+    ${slots.map((sl, k) => { const has = sl.img && ASSETS.get(sl.img); return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span style="font-size:12.5px;min-width:0;overflow-wrap:anywhere"><b class="mono" style="font-size:11px">${String(sl.i + 1).padStart(2, '0')}</b> ${esc(sl.want || 'foto')} ${has ? '<span style="color:var(--success)">✓</span>' : ''}</span>${photoInput('slot', k, !!has)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 6px">${sl.ref.url ? linkBtn(sl.ref.url, '📰 Abrir matéria') : sl.ref.title ? linkBtn(gNews(sl.ref.title), '📰 Achar matéria') : ''}${linkBtn(gImg(sl.want || sl.ref.title || ''), '🖼️ Achar foto')}</div>`; }).join('')}<p class="muted" style="margin:0;font-size:12px">No celular: toque em Achar foto, segure a imagem, Salvar em Fotos e volte aqui em Enviar foto. Um print da matéria também serve.</p></div>${newsFoundHTML(P)}`;
 }
 async function handlePhotoInput(el) {
   const P = S.project, file = el.files?.[0]; if (!file) return;

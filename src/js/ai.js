@@ -66,7 +66,7 @@ const DOC_GUIDE = `Além das cenas com personagem, você pode usar dois formatos
      {"type":"stat","value":"40","suffix":"%","label":"DOS CASOS"},
      {"type":"card","kicker":"INQUÉRITO 1 · STF","title":"Lavagem de dinheiro","text":"uma linha de contexto","footer":"RELATOR: ...","icon":"${DOC_ICONS.join('|')}","tone":"amber|blue|red|gray","want":"foto de <pessoa/lugar>" (opcional: pede uma foto real para o círculo do cartão)},
      {"type":"photo","want":"descrição exata da foto real que o editor deve enviar","label":"legenda curta","grade":"doc|bw|warm|none"},
-     {"type":"news","site":"NOME DO SITE","section":"ECONOMIA","title":"manchete da matéria","mark":"trecho da manchete que fica grifado em amarelo","sub":"linha fina","date":"05/11/2026","want":"foto da matéria (opcional)"} (print de matéria/notícia: ocupa a largura toda),
+     {"type":"news","site":"NOME DO SITE","section":"ECONOMIA","title":"manchete da matéria","mark":"trecho da manchete que fica grifado em amarelo","sub":"linha fina","date":"05/11/2026","url":"link da matéria (das NOTÍCIAS REAIS, se houver)","want":"foto da matéria (opcional)"} (print de matéria/notícia: ocupa a largura toda),
      {"type":"study","org":"Universidade X","year":"2025","title":"o que a pesquisa descobriu","value":"62","suffix":"%","label":"das pessoas ..."} (cartão de pesquisa com número e barra animada) ],
    REGRA: "news" e "study" só com fatos, veículos, instituições e números que você sabe que são reais; nunca invente manchete, site ou dado. Na dúvida use "card" ou "stat" sem citar veículo.
    "crowd":0 a 16 (fileira de bonecos no chão = população, vítimas, eleitores),
