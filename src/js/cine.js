@@ -38,12 +38,15 @@ function drawCineBody(ctx, look, o, t) {
   const sil = c => (silhouette ? '#0f1116' : dim ? shade(c, -dim) : c);
   const cap = (x1, y1, x2, y2, w, col) => { ctx.lineCap = 'round'; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
   const ell = (x, y, rx, ry, rot = 0) => { ctx.beginPath(); ctx.ellipse(x, y, Math.max(.01, rx), Math.max(.01, ry), rot, 0, Math.PI * 2); };
-  const limbPts = (x, y, a1, l1, a2, l2) => { const ex = x + Math.sin(a1) * l1, ey = y + Math.cos(a1) * l1, a = a1 + a2; return [ex, ey, ex + Math.sin(a) * l2, ey + Math.cos(a) * l2, a]; };
+  const limbPts = (x, y, a1, l1, a2, l2) => { const ex = x - Math.sin(a1) * l1, ey = y + Math.cos(a1) * l1, a = a1 + a2; return [ex, ey, ex - Math.sin(a) * l2, ey + Math.cos(a) * l2, a]; };
   ctx.save(); ctx.scale(facing * u, u);
-  if (pose !== 'fall' && !silhouette) { ctx.fillStyle = 'rgba(0,0,0,.22)'; ell(0, 0, 16, 2.6); ctx.fill(); }
-  if (talking && (pose === 'stand' || pose === 'cross')) { A.uaF = -.55 + Math.sin(ph * 4.3) * .3; A.faF = -1.05 + Math.sin(ph * 5.7) * .3; A.head += Math.sin(ph * 3.1) * .035; }
+  if (pose !== 'fall' && !silhouette) { const up = clamp(-A.bob / 6, 0, .5); ctx.fillStyle = `rgba(0,0,0,${.22 - up * .2})`; ell(0, 0, 16 * (1 - up * .4), 2.6 * (1 - up * .4)); ctx.fill(); }
+  if (pose === 'run') { for (const k of ['thF', 'thB', 'shF', 'shB']) A[k] *= .72; A.uaF *= .85; A.uaB *= .85; A.faF = A.faB = 1.25; }
+  if (pose === 'walk') { A.thF *= .9; A.thB *= .9; A.faF = .3 + Math.max(0, Math.sin(ph * 9.4)) * .25; A.faB = .3 + Math.max(0, -Math.sin(ph * 9.4)) * .25; }
+  if (talking && (pose === 'stand' || pose === 'cross')) { const g1 = Math.sin(ph * 2.7), g2 = Math.sin(ph * 4.1 + 1); A.uaF = -.28 + g1 * .14; A.faF = -1.95 + g2 * .32; if (Math.sin(ph * .9) > .35) { A.uaB = -.2 + g2 * .1; A.faB = -1.8 - g1 * .25; } A.head += Math.sin(ph * 3.1) * .04 + Math.sin(ph * 1.3) * .03; }
+  if (pose === 'stand' && !talking) { A.lean += Math.sin(ph * .9) * .012; A.head += Math.sin(ph * .7) * .035; }
   const sitDrop = A.lift ? 25 : 0; ctx.translate(0, A.bob * .7 + sitDrop); ctx.rotate(A.lean * .7);
-  const hipY = -50, shY = -80, longSleeve = ['hoodie', 'suit', 'uniform', 'jacket'].includes(look.top);
+  const hipY = -50, shY = -80 + (pose === 'run' ? 0 : Math.sin(ph * 2.2) * .4), longSleeve = ['hoodie', 'suit', 'uniform', 'jacket'].includes(look.top);
   if (A.lift && !PLACE_FX.cabin) { ctx.fillStyle = sil('#5a4434'); rrp(ctx, -13, -46 - 0, 28, 4.5, 1.5); ctx.fill(); ctx.fillStyle = sil('#3e2f25'); ctx.fillRect(-11, -42, 2.4, 17); ctx.fillRect(11, -42, 2.4, 17); }
   if (look.accessory === 'backpack') { ctx.fillStyle = sil('#3b5a40'); rrp(ctx, -16, shY + 3, 8, 22, 3); ctx.fill(); }
   /* legs */
@@ -51,7 +54,7 @@ function drawCineBody(ctx, look, o, t) {
     const [kx, ky, fx, fy, fa] = limbPts(lx, hipY, th * .9, 24, sh * .9, 23);
     const col = sil(back ? shade(pants, -.16) : pants);
     cap(lx, hipY, kx, ky, 8, col); cap(kx, ky, fx, fy - 1.5, 6.4, col);
-    ctx.save(); ctx.translate(fx, fy); ctx.rotate(-fa * .5); ctx.fillStyle = sil(back ? '#1e1e22' : '#2a2a30'); rrp(ctx, -3.6, -3.4, 10.5, 4.4, 2); ctx.fill(); ctx.fillStyle = sil('#d8d6d0'); ctx.fillRect(-3.6, -.6, 10.5, 1); ctx.restore();
+    ctx.save(); ctx.translate(fx, fy); ctx.rotate(fa * .5); ctx.fillStyle = sil(back ? '#1e1e22' : '#2a2a30'); rrp(ctx, -3.6, -3.4, 10.5, 4.4, 2); ctx.fill(); ctx.fillStyle = sil('#d8d6d0'); ctx.fillRect(-3.6, -.6, 10.5, 1); ctx.restore();
   }
   /* pelvis */
   ctx.fillStyle = sil(pants); ctx.beginPath(); ctx.moveTo(-9, -57); ctx.lineTo(9, -57); ctx.quadraticCurveTo(10, -50, 7.5, -46); ctx.lineTo(-7.5, -46); ctx.quadraticCurveTo(-10, -50, -9, -57); ctx.fill();
@@ -59,7 +62,7 @@ function drawCineBody(ctx, look, o, t) {
   const sleeveB = sil(longSleeve ? shade(top, -.18) : shade(skin, -.14));
   { const [ex, ey, hx, hy, ha2] = limbPts(-8.8, shY + 2.5, A.uaB, 16, A.faB, 14.5); cap(-8.8, shY + 2.5, ex, ey, 5.2, sleeveB); cap(ex, ey, hx, hy, 4.4, longSleeve ? sleeveB : sil(shade(skin, -.14)));
     if (look.top === 'tshirt') cap(-8.8, shY + 2.5, -8.8 + (ex + 8.8) * .42, shY + 2.5 + (ey - shY - 2.5) * .42, 6.4, sil(shade(top, -.18)));
-    cineHand(ctx, hx, hy, ha2, sil(shade(skin, -.14))); }
+    cineHand(ctx, hx, hy, -ha2, sil(shade(skin, -.14))); }
   /* neck */
   ctx.fillStyle = sil(shade(skin, -.14)); ctx.fillRect(-2.6, shY - 6, 5.2, 7.5);
   /* torso */
@@ -86,9 +89,9 @@ function drawCineBody(ctx, look, o, t) {
   const sleeveF = sil(longSleeve ? top : skin);
   cap(8.8, shY + 2.5, ex, ey, 5.2, sleeveF); cap(ex, ey, hx, hy, 4.4, longSleeve ? sleeveF : sil(skin));
   if (look.top === 'tshirt') cap(8.8, shY + 2.5, 8.8 + (ex - 8.8) * .42, shY + 2.5 + (ey - shY - 2.5) * .42, 6.4, sil(top));
-  if (look.accessory === 'watch') { ctx.fillStyle = sil('#c9ccd3'); ell(hx - Math.sin(ha) * 3, hy - Math.cos(ha) * 3, 2.2, 1.3, -ha); ctx.fill(); }
-  drawProp(ctx, prop, hx, hy, ha, sil, pose);
-  cineHand(ctx, hx, hy, ha, sil(skin));
+  if (look.accessory === 'watch') { ctx.fillStyle = sil('#c9ccd3'); ell(hx + Math.sin(ha) * 3, hy - Math.cos(ha) * 3, 2.2, 1.3, ha); ctx.fill(); }
+  drawProp(ctx, prop, hx, hy, -ha, sil, pose);
+  cineHand(ctx, hx, hy, -ha, sil(skin));
   ctx.restore(); TL = prevTL;
 }
 
@@ -99,7 +102,7 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
   const P = new Path2D(); P.moveTo(-150, -60); P.bezierCurveTo(-150, -235, 150, -235, 150, -60); P.bezierCurveTo(150, 60, f ? 108 : 122, 168, 0, 196); P.bezierCurveTo(f ? -108 : -122, 168, -150, 60, -150, -60);
   const fill = (c, path) => { ctx.fillStyle = c; ctx.fill(path); };
   /* back hair */
-  if (look.hair === 'long') { ctx.fillStyle = hc; ctx.beginPath(); ctx.moveTo(-178, -40); ctx.bezierCurveTo(-190, -250, 190, -250, 178, -40); ctx.bezierCurveTo(192, 110, 205, 230, 190, 330); ctx.lineTo(-190, 330); ctx.bezierCurveTo(-205, 230, -192, 110, -178, -40); ctx.fill(); }
+  if (look.hair === 'long') { const hs = Math.sin(t * 2.4) * 8; ctx.fillStyle = hc; ctx.beginPath(); ctx.moveTo(-178, -40); ctx.bezierCurveTo(-190, -250, 190, -250, 178, -40); ctx.bezierCurveTo(192, 110, 205 + hs, 230, 190 + hs * 1.6, 330); ctx.lineTo(-190 + hs * 1.6, 330); ctx.bezierCurveTo(-205 + hs, 230, -192, 110, -178, -40); ctx.fill(); }
   if (look.hair === 'bun') { ctx.fillStyle = hc; ctx.beginPath(); ctx.arc(20, -250, 70, 0, 7); ctx.fill(); }
   /* ears */
   if (look.hair !== 'long') for (const s of [-1, 1]) { ctx.fillStyle = skd; ctx.beginPath(); ctx.ellipse(s * 148, -10, 26, 44, 0, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(80,35,25,.25)'; ctx.beginPath(); ctx.ellipse(s * 150, -8, 11, 24, 0, 0, 7); ctx.fill(); }
@@ -115,7 +118,7 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
   ctx.restore();
   /* expression parameters */
   const E = { neutral: [1, 0, 0, 'line'], happy: [.86, .25, 0, 'smile'], confident: [.78, .1, -.2, 'smirk'], worried: [1.05, .45, .9, 'frown'], sad: [.8, .1, 1, 'frown'], angry: [.8, -.35, -2.2, 'tight'], scared: [1.35, 1, .8, 'open'], shocked: [1.45, 1.4, .3, 'open'] }[emotion] || [1, 0, 0, 'line'];
-  const blink = (t % 3.6) < .1 ? .06 : 1, op = E[0] * blink, raise = E[1], inner = E[2], look2 = Math.sin(t * .6) * .3 + .4;
+  const blink = (t % 3.6) < .1 || (t % 7.3) > 7.18 ? .06 : 1, op = E[0] * blink, raise = E[1] + (talking ? Math.max(0, Math.sin(t * 2.3)) * .3 : 0), inner = E[2], look2 = Math.sin(t * .6) * .3 + .4;
   /* brows */
   ctx.fillStyle = sil(shade(look.hairColor || '#2a1d16', -.1));
   for (const s of [-1, 1]) { ctx.save(); ctx.scale(s, 1); const yo = -raise * 14, yi = -raise * 16 - inner * 14; ctx.beginPath(); ctx.moveTo(118, -54 + yo); ctx.quadraticCurveTo(84, -86 + yo + yi * .3, 36, -70 + yi); ctx.lineTo(35, -59 + yi); ctx.quadraticCurveTo(82, -73 + yo + yi * .3, 116, -47 + yo); ctx.fill(); ctx.restore(); }

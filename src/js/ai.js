@@ -183,6 +183,7 @@ Direção de arte: o protagonista ("hero") aparece em quase todas as cenas e rea
 Campo opcional "set":[...] com objetos de fundo.
 "shot": "close" = rosto enorme reagindo (use em choque, dúvida, piada, ~1 a cada 3 cenas), "medium" = da cintura para cima, "wide" = corpo inteiro no cenário. Varie o enquadramento como num desenho animado.
 ${SET_GUIDE}
+${HOME_GUIDE}
 ${THING_GUIDE}
 ${OBJ_GUIDE}
 ${CINE_GUIDE}`;

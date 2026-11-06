@@ -126,7 +126,7 @@ function drawThings(ctx, W, H, things, t, d, layer, world) {
   }
 }
 function normThings(list) {
-  return (Array.isArray(list) ? list : []).slice(0, 4).map(x => ({ type: THINGS[x?.type] ? x.type : null, anim: THING_ANIMS[x?.anim] ? x.anim : 'idle', x: clamp(Number(x?.x ?? .5), -.2, 1.2), y: clamp(Number(x?.y ?? .6), -.2, 1.2), size: clamp(Number(x?.size ?? .5), .1, 2.5), dir: x?.dir === 'left' ? 'left' : 'right', front: !!x?.front, ...(/^#[0-9a-f]{6}$/i.test(x?.color || '') ? { color: x.color } : {}) })).filter(x => x.type);
+  return (Array.isArray(list) ? list : []).slice(0, 4).map(x => ({ type: THINGS[x?.type] ? x.type : null, anim: THING_ANIMS[x?.anim] ? x.anim : 'idle', x: clamp(Number(x?.x ?? .5), -.2, 1.2), y: clamp(Number(x?.y ?? .6), -.2, 1.2), size: clamp(Number(x?.size ?? .5), .1, 2.5), dir: x?.dir === 'left' ? 'left' : 'right', front: !!x?.front, ...(/^#[0-9a-f]{6}$/i.test(x?.color || '') ? { color: x.color } : {}), ...(x?.label ? { label: String(x.label).slice(0, 18) } : {}), ...(x?.value ? { value: String(x.value).slice(0, 14) } : {}) })).filter(x => x.type);
 }
 
 /* ---------- immersive places ---------- */
