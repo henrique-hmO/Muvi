@@ -604,9 +604,11 @@ function drawFrame(ctx, P, t, opts = {}) {
     const out = flat ? 1 : outro(loc.local, loc.dur);
     ctx.save(); ctx.globalAlpha = out; ctx.translate(0, (1 - out) * -Math.min(W, H) * .03);
     if (flat && loc.index > 0 && loc.local < .26) { const e = ease.out(clamp(loc.local / .26)), sty = loc.index % 4; if (sty === 1 || sty === 3) ctx.translate((1 - e) * W * .28 * (sty === 1 ? 1 : -1), 0); else if (sty === 2) { ctx.translate(W / 2, H / 2); ctx.scale(1 + (1 - e) * .18, 1 + (1 - e) * .18); ctx.rotate((1 - e) * .03); ctx.translate(-W / 2, -H / 2); } }
+    const pz = typeof punchAt === 'function' ? punchAt(P, t) : 1; if (pz !== 1) { ctx.translate(W / 2, H * .45); ctx.scale(pz, pz); ctx.translate(-W / 2, -H * .45); }
     try { fn(ctx, L, W, H, loc.local, loc.dur, s.p || {}); } catch (e) { console.warn('scene draw', e); }
     ctx.restore();
     if (cine) try { cinePost(ctx, W, H, s, loc.local); } catch (e) { console.warn('cine', e); }
+    if (typeof drawSceneFx === 'function') try { drawSceneFx(ctx, W, H, s, loc.local, loc.dur, P); } catch (e) { console.warn('fx', e); }
     if (P.chrome && !flat) drawChrome(ctx, L, W, H, P, loc, total);
     if (loc.index > 0 && !flat) drawWipe(ctx, L, W, H, loc.local);
     if (loc.index === 0 && P.mode !== 'footage' && !cine) { const f = 1 - clamp(loc.local / .18); if (f > 0) { ctx.fillStyle = `rgba(255,255,255,${(f * .55).toFixed(3)})`; ctx.fillRect(0, 0, W, H); } }

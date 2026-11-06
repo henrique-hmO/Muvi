@@ -256,7 +256,7 @@ Carro, moto, animal ou objeto no chão junto com personagem: use shot "wide" (o 
 Legendas: em cada fala marque UMA palavra-chave com *asteriscos* (vira uma caixa vermelha na tela).`;
 
 function climaBrief(c) {
-  return c === 'escuro'
+  return (typeof FX_GUIDE === 'string' ? '\n' + FX_GUIDE + '\n' + VIRAL_GUIDE + '\n' : '') + (c === 'escuro'
     ? '\nILUMINAÇÃO ESCOLHIDA: ESCURA (terror/suspense). Use mood "mystery" nas cenas de tensão e "tense"/"danger" nos sustos; cenas de noite.\n'
-    : '\nILUMINAÇÃO ESCOLHIDA: CLARA. NUNCA use mood "mystery"; prefira time "day" e mood "normal"/"hope". O gancho forte vem do texto, da ação e do close, não do escuro.\n';
+    : '\nILUMINAÇÃO ESCOLHIDA: CLARA. NUNCA use mood "mystery"; prefira time "day" e mood "normal"/"hope". O gancho forte vem do texto, da ação e do close, não do escuro.\n');
 }

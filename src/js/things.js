@@ -83,6 +83,7 @@ const THING_DRAW = {
 /* movement over the scene: returns {x, y, rot, scale, face} in 0..1 frame units */
 function thingMotion(th, t, d) {
   const k = clamp(t / Math.max(.5, d)), dir = th.dir === 'left' ? -1 : 1, x0 = clamp(Number.isFinite(+th.x) ? +th.x : .5, -.2, 1.2), y0 = clamp(Number.isFinite(+th.y) ? +th.y : .6, -.2, 1.2);
+  if (['fridge', 'door', 'building', 'bill', 'oldphone', 'safe', 'contract', 'notebook'].includes(th.type) && th.anim !== 'fall' && th.anim !== 'fly') return { x: x0, y: y0, rot: 0, face: dir };
   switch (th.anim) {
     case 'fly': return { x: dir > 0 ? lerp(-.25, 1.25, k) : lerp(1.25, -.25, k), y: y0 + Math.sin(t * 2) * .01, rot: Math.sin(t * 1.5) * .03 - dir * .04, face: dir };
     case 'fall': return { x: x0 + Math.sin(t * 1.3) * .03, y: lerp(-.15, 1.15, k * .55 + k * k * .45), rot: t * 3 * dir, face: dir };

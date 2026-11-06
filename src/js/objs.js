@@ -1,5 +1,5 @@
 /* ============ OBJ: explainer scenes that SHOW things (receipt, wallet, phone chat, price, choice…) in the toon style ============ */
-const OBJ_TYPES = { receipt: 'Orçamento / recibo', wallet: 'Carteira com dinheiro', price: 'Produto com preço', phone_chat: 'Celular: conversa', phone_post: 'Celular: post', phone_call: 'Celular: chamada', question: 'Mistério (?)', choice: 'Escolha A ou B', progress: 'Barra de progresso', map: 'Mapa com rota', board: 'Quadro de preços', big_number: 'Número grande', checklist: 'Lista de itens', compare: 'Antes x depois', lock: 'Celular: tela de bloqueio', part2: 'Cartela "Parte 2"' };
+const OBJ_TYPES = { receipt: 'Orçamento / recibo', wallet: 'Carteira com dinheiro', price: 'Produto com preço', phone_chat: 'Celular: conversa', phone_post: 'Celular: post', phone_call: 'Celular: chamada', question: 'Mistério (?)', choice: 'Escolha A ou B', progress: 'Barra de progresso', map: 'Mapa com rota', board: 'Quadro de preços', big_number: 'Número grande', checklist: 'Lista de itens', compare: 'Antes x depois', lock: 'Celular: tela de bloqueio', part2: 'Cartela "Parte 2"', clock: 'Relógio digital (hora exata)', score: 'Placar (A x B)' };
 const OBJ_BG = { stripes: 'Listras', wood: 'Madeira', paper: 'Papel', dark: 'Escuro', red: 'Vermelho', blue: 'Azul', yellow: 'Amarelo' };
 
 function toonKit(ctx, m) {
@@ -165,6 +165,21 @@ const OBJ_DRAW = {
     ctx.fillStyle = 'rgba(255,255,255,.7)'; rr(ctx, -pw * .18, ph * .45, pw * .36, ph * .008, ph * .004); ctx.fill();
     ctx.restore(); ctx.restore();
   },
+  clock(ctx, K, m, W, H, it, t) {
+    const w = m * .78, h = m * .34; ctx.fillStyle = '#121214'; rr(ctx, -w / 2, -h / 2, w, h, m * .03); ctx.fill(); ctx.strokeStyle = '#2c2c31'; ctx.lineWidth = m * .008; ctx.stroke();
+    ctx.fillStyle = '#1d0b0b'; rr(ctx, -w / 2 + m * .03, -h / 2 + m * .03, w - m * .06, h - m * .06, m * .015); ctx.fill();
+    const txt = String(it.time || '03:40'), on = Math.floor(t * 2) % 2 === 0; ctx.save(); ctx.font = `700 ${h * .62}px "JetBrains Mono", ui-monospace, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,60,50,.12)'; ctx.fillText(txt.replace(/\d/g, '8'), 0, h * .03); ctx.shadowColor = 'rgba(255,40,30,.9)'; ctx.shadowBlur = m * .04; ctx.fillStyle = '#ff3b30'; ctx.fillText(on ? txt : txt.replace(':', ' '), 0, h * .03); ctx.restore();
+    if (it.label) K.txt(String(it.label).toUpperCase(), 0, h / 2 + m * .07, m * .05, '#fff', 900, 'center');
+  },
+  score(ctx, K, m, W, H, it, t) {
+    const k = ease.out(clamp((t - .2) / 1)), num = v => { const n = parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? Math.round(n * k) : v; };
+    const av = parseFloat(it.av) || 0, bv = parseFloat(it.bv) || 0, win = av >= bv ? 0 : 1;
+    [[it.a || 'A', it.av, -1], [it.b || 'B', it.bv, 1]].forEach(([name, v, sd], i) => { const x = sd * m * .22, bw = m * .36, bh = m * .26; ctx.fillStyle = '#121214'; rr(ctx, x - bw / 2, -bh / 2, bw, bh, m * .02); ctx.fill(); if (i === win && k > .95) { ctx.strokeStyle = '#f2b33d'; ctx.lineWidth = m * .01; ctx.stroke(); }
+      ctx.save(); ctx.font = `700 ${bh * .52}px "JetBrains Mono", ui-monospace, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = i === win ? '#f2f2f2' : '#bdbdc2'; ctx.fillText(String(num(v)), x, m * .005); ctx.restore();
+      K.txt(String(name).toUpperCase(), x, bh / 2 + m * .06, m * .045, '#fff', 900, 'center'); });
+    K.txt('X', 0, 0, m * .06, 'rgba(255,255,255,.7)', 900, 'center');
+  },
   part2(ctx, K, m, W, H, it, t) {
     const sh = H > W ? H / W : 1;
     K.txt(String(it.top || '').toUpperCase(), 0, -m * .52 * sh, m * .03, 'rgba(255,255,255,.55)', 700, 'center');
@@ -208,7 +223,7 @@ const OBJ_GUIDE = `Cena de OBJETO explicativo (kind "obj"): mostra a coisa de qu
 {"kind":"obj","say":"narração","p":{"bg":"${Object.keys(OBJ_BG).join('|')}","title":"rótulo curto no topo com *destaque*","cross":false,"who":{"who":"<id>","emotion":"shocked"},"item":{"type":"...", ...campos}}}
 Tipos de item e campos:
 receipt {title,brand,lines:[..],total:"R$ 800"} · wallet {money:"R$ 192",notes:[100,10],coins:3,cards:["BILHETE ÚNICO","CARTÃO VENCIDO"]} · price {name,price:"R$ 150",sub,result:"SOBRA R$ 42"} · phone_chat {name,msgs:[{"me":false,"text":".."},{"me":true,"text":".."}]} · phone_post {name,likes,caption} · phone_call {name,state} · question {label} · choice {a,b,subA,subB,cta:"COMENTE UMA PALAVRA"} · progress {label,value:0-100,delta:"+9%"} · map {to,label} · board {title,rows:[["CORTE","R$ 50"]]} · big_number {top,value,bottom} · checklist {title,items:[..],bad:false} · compare {a,av,b,bv}.
-lock {time:"03:00",date:"quinta-feira, 5 de novembro",name:"Mãe",text:"Filha, abre o portão."} (tela de bloqueio com notificação: ótimo gancho de suspense) · part2 {top:"NOME DA HISTÓRIA",value:"2",bottom:"EM BREVE",sub:"SEGUE PRA NÃO PERDER"} (última cena de história em partes, use bg "dark").
+clock {time:"03:40",label:"DA MANHÃ"} (relógio digital vermelho gigante: gancho de hora exata) · score {a:"TANCREDO",av:"480",b:"MALUF",bv:"180"} (placar com números subindo) · lock {time:"03:00",date:"quinta-feira, 5 de novembro",name:"Mãe",text:"Filha, abre o portão."} (tela de bloqueio com notificação: ótimo gancho de suspense) · part2 {top:"NOME DA HISTÓRIA",value:"2",bottom:"EM BREVE",sub:"SEGUE PRA NÃO PERDER"} (última cena de história em partes, use bg "dark").
 "who" (opcional) põe o personagem em close no canto reagindo. "cross":true carimba um X vermelho (algo que deu errado).`;
 const OBJ_FIELDS = {
   receipt: [['brand', 'Marca no topo (id ou nome)'], ['title', 'Título'], ['lines', 'Linhas (uma por linha)', 'list'], ['total', 'Total']],
@@ -225,6 +240,8 @@ const OBJ_FIELDS = {
   big_number: [['top', 'Texto acima'], ['value', 'Número'], ['bottom', 'Texto abaixo']],
   checklist: [['title', 'Título'], ['items', 'Itens (um por linha)', 'list']],
   lock: [['time', 'Hora'], ['date', 'Data'], ['name', 'Quem mandou'], ['text', 'Mensagem']],
+  clock: [['time', 'Hora (ex.: 03:40)'], ['label', 'Texto embaixo']],
+  score: [['a', 'Lado A'], ['av', 'Número A'], ['b', 'Lado B'], ['bv', 'Número B']],
   part2: [['top', 'Texto pequeno (título)'], ['value', 'Número da parte'], ['bottom', 'Texto embaixo'], ['sub', 'Chamada']],
   compare: [['a', 'Lado A'], ['av', 'Valor A'], ['b', 'Lado B'], ['bv', 'Valor B']],
 };
