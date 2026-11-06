@@ -147,7 +147,7 @@ ${CINE_GUIDE}
 Cena com personagem (opcional, para dar emoção): {"kind":"story","say":"..","p":{"place":"office|room|street|shop|..","hero":{"who":"hero","pose":"stand|point|think|celebrate|sad|scared","emotion":"neutral|happy|worried|shocked|angry","shot":"close|medium|wide"},"text":"até 4 palavras"}}
 
 Regras:
-- EXPLIQUE MOSTRANDO: pelo menos metade das cenas deve ser "obj" (o recibo, a conversa, o preço, a comparação) ou modelos com dados; alterne com personagem reagindo.
+- EXPLIQUE MOSTRANDO COM COISAS REAIS: a base do explicativo são cenas "doc" (manchete de matéria "news", pesquisa "study", número, foto real, cartão) e "obj" (o recibo, a conversa, o preço, a comparação) ou modelos com dados. Personagem é opcional: use só quando uma reação ou situação ajudar (no máximo 1 em cada 4 cenas), e pode não ter nenhum.
 - Comece com "hook" e termine com "cta".
 - Varie os modelos; não repita o mesmo modelo duas vezes seguidas.
 - Textos na tela curtos; quem conta a história é a narração.

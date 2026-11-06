@@ -1,5 +1,5 @@
 /* ============ UI: views, player, board, studio, timeline ============ */
-const OPT = { news: 'sim', clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
+const OPT = { news: 'nao', clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
 const EXAMPLES = [
   'Explique em 1 minuto o que é um atendente de IA no WhatsApp e por que clínicas estão usando',
   'Os 4 passos para criar uma landing page que converte, para pequenos negócios',
