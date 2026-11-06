@@ -53,8 +53,8 @@ DRAW.talk = (ctx, L, W, H, t, d, p) => {
     if (cur.who !== 'narrator') { const who = castOf(P, cur.who); ctx.save(); ctx.font = `800 ${m * .036}px "Poppins", ${FALLBACK}`; const nm = String(who.name || '').toUpperCase(), tw = ctx.measureText(nm).width, hh = m * .066, x = W / 2 - tw / 2 - m * .03, y = H * (vertical ? .1 : .07); rr(ctx, x, y, tw + m * .06, hh, hh / 2); ctx.fillStyle = who.topColor || L.a1; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, m * .004); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(nm, x + m * .03, y + hh / 2 + 1); ctx.restore(); }
     return;
   }
-  const env = drawPlace(ctx, W, H, p.place || 'room', p.time || 'day', t, cam, p);
-  drawThings(ctx, W, H, p.things, t, d, 'back');
+  const env = drawPlace(ctx, W, H, p.place || 'room', p.time || 'day', t, cam, p), world = { pivot: gy, wpivot: gy, ground: gy + H * .02, z: cam.z, cx: cam.x, ch };
+  drawThings(ctx, W, H, p.things, t, d, 'back', world);
   ctx.save(); ctx.translate(W / 2, gy); ctx.scale(cam.z, cam.z); ctx.translate(-W / 2 - cam.x, -gy);
   const avg = chars.reduce((a, _, j) => a + xOf(j), 0) / Math.max(1, chars.length);
   const order = chars.map((_, j) => j).sort((a, b) => (cur && chars[a].who === cur.who ? 1 : 0) - (cur && chars[b].who === cur.who ? 1 : 0));
@@ -70,7 +70,7 @@ DRAW.talk = (ctx, L, W, H, t, d, p) => {
   }
   ctx.restore();
   env.fg?.();
-  drawThings(ctx, W, H, p.things, t, d, 'front');
+  drawThings(ctx, W, H, p.things, t, d, 'front', world);
   drawMood(ctx, W, H, p.mood || 'normal', t);
   /* name tag over whoever is speaking */
   if (cur && cur.who !== 'narrator' && idx(cur.who) >= 0) {
@@ -249,7 +249,7 @@ Para onde a história vai: ${nv.arc || 'decida você, mantendo coerência'}
 Elenco fixo (use exatamente estes ids e mantenha a personalidade): ${nvCastBrief(nv.cast)}
 Episódios anteriores:
 ${prev.map(e => `Ep ${e.n} · ${e.title}: ${e.summary} Gancho: ${e.cliff}`).join('\n') || '(nenhum)'}
-${blueprintBrief(bpOf(nv.bpId), seconds)}${brandBrief(chOf(nv.channelId))}Escreva agora o EPISÓDIO ${n}. Comece com o narrador lembrando o gancho anterior em 1 frase curta (até 3 s) e entre direto no conflito.${wish ? `\nO que o autor quer neste episódio: "${wish}".` : ''}
+${blueprintBrief(bpOf(nv.bpId), seconds)}${brandBrief(chOf(nv.channelId))}${climaBrief(OPT.nvClima)}Escreva agora o EPISÓDIO ${n}. Comece com o narrador lembrando o gancho anterior em 1 frase curta (até 3 s) e entre direto no conflito.${wish ? `\nO que o autor quer neste episódio: "${wish}".` : ''}
 ${NOVELA_RULES}
 Se precisar de personagem novo, inclua em "newCast" no mesmo formato: ${NV_CAST_GUIDE.split('\n')[1]}
 ${EP_FORMAT(seconds)}
@@ -294,7 +294,7 @@ async function startNovela(useAI) {
   step('brief', 'done', `${opt.genre} · ${fmtDur(opt.seconds)}`); step('write', 'run');
   FLOW = new AbortController(); const live = $('#liveText'); live.hidden = false; live.textContent = 'Pensando…';
   try {
-    nv.bpId = BP.sel || ''; nv.channelId = CH.sel || ''; const r = await createNovela(premise + blueprintBrief(bpOf(BP.sel), opt.seconds) + brandBrief(chOf(CH.sel)), opt, FLOW.signal, ({ text }) => { const n = (text.match(/"(?:text|say)"\s*:/g) || []).length; const last = [...text.matchAll(/"(?:text|say)"\s*:\s*"([^"]{3,120})"/g)].pop(); live.textContent = `${n} falas escritas${last ? `\n“${last[1]}”` : ''}`; });
+    nv.bpId = BP.sel || ''; nv.channelId = CH.sel || ''; const r = await createNovela(premise + blueprintBrief(bpOf(BP.sel), opt.seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.nvClima), opt, FLOW.signal, ({ text }) => { const n = (text.match(/"(?:text|say)"\s*:/g) || []).length; const last = [...text.matchAll(/"(?:text|say)"\s*:\s*"([^"]{3,120})"/g)].pop(); live.textContent = `${n} falas escritas${last ? `\n“${last[1]}”` : ''}`; });
     Object.assign(nv, { title: r.title, logline: r.logline || premise, bible: r.bible, arc: r.arc, cast: r.cast }); post = r.post;
     step('write', 'done', `${r.cast.length} personagens · ${r.episode.scenes.length} cenas`); step('voice', 'run');
     assignVoices(nv.cast, nv.narrator); step('voice', 'done', nv.cast.map(c => `${c.name}: ${TTS_VOICES.find(v => v.id === c.voice)?.label.split(' ·')[0]}`).join(' · '));
@@ -377,6 +377,7 @@ function initNovelaHome() {
   OPT.nvGenre = NVO.genre; OPT.nvSecs = NVO.seconds;
   chipSet('[data-opt="nvGenre"]', NV_GENRES.map(g => [g, g]), 'nvGenre', v => (NVO.genre = v));
   chipSet('[data-opt="nvSecs"]', NV_SECS, 'nvSecs', v => (NVO.seconds = v));
+  chipSet('[data-opt="nvClima"]', CLIMAS, 'nvClima');
   $('#nvGo').onclick = () => startNovela(true);
   $('#nvLocal').onclick = () => startNovela(false);
   $('#nvLib').onclick = e => { const b = e.target.closest('[data-nva]'); if (!b) return; const id = b.closest('[data-nv]').dataset.nv; if (b.dataset.nva === 'next') nextEpisodeModal(id); else openEpisode(id, +b.dataset.n); };

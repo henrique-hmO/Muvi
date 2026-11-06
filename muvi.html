@@ -414,6 +414,7 @@ main { min-height: calc(100% - var(--top)); }
             <div class="field"><span>Formato</span><div class="chips" data-opt="aspect"></div></div>
             <div class="field"><span>Duração</span><div class="chips" data-opt="seconds"></div><input class="input" id="customSec" type="number" min="5" step="5" placeholder="Segundos" hidden aria-label="Duração em segundos"></div>
             <div class="field"><span>Tom</span><div class="chips" data-opt="tone"></div></div>
+            <div class="field"><span>Iluminação</span><div class="chips" data-opt="clima"></div></div>
             <div class="field"><span>Visual</span><div class="swatches" data-opt="look"></div></div>
             <div class="field" style="grid-column:1/-1"><span>Canal (marcas fictícias do nicho aparecem no vídeo)</span><div class="chips" data-chpick></div></div>
             <div class="field" style="grid-column:1/-1"><span>Estrutura viral (opcional): o roteiro copia o gancho e o ritmo de um vídeo que bombou</span><div class="chips" data-bppick></div></div>
@@ -433,6 +434,7 @@ main { min-height: calc(100% - var(--top)); }
             <div class="opt-grid">
               <div class="field"><span>Gênero</span><div class="chips" data-opt="nvGenre"></div></div>
               <div class="field"><span>Duração do episódio</span><div class="chips" data-opt="nvSecs"></div></div>
+              <div class="field"><span>Iluminação</span><div class="chips" data-opt="nvClima"></div></div>
               <div class="field" style="grid-column:1/-1"><span>Canal (marcas fictícias nos episódios)</span><div class="chips" data-chpick></div></div>
               <div class="field" style="grid-column:1/-1"><span>Estrutura viral (opcional, vale para todos os episódios)</span><div class="chips" data-bppick></div></div>
             </div>
@@ -703,7 +705,7 @@ function defaultDur(kind, p = {}) {
 
 function newProject(mode = 'explainer', aspect = '9:16') {
   return {
-    id: uid(), title: 'Projeto sem nome', mode, aspect, fps: 30, look: 'moove',
+    id: uid(), title: 'Projeto sem nome', mode, aspect, fps: 30, look: 'moove', cineDark: typeof OPT !== 'undefined' && (mode === 'novela' || OPT.mode === 'novela' ? OPT.nvClima : OPT.clima) === 'escuro',
     chrome: mode === 'explainer', progressBar: mode === 'story', fit: 'cover',
     charStyle: 'cine', captions: { on: mode !== 'explainer', preset: mode === 'footage' ? 'box' : 'cine', pos: mode === 'footage' ? .74 : .7, upper: false, words: 3, accent: null },
     music: { kind: mode === 'footage' ? 'none' : 'pulse', vol: mode === 'story' ? .22 : .35, buffer: null, name: '' },
@@ -1781,8 +1783,8 @@ function drawIcon(ctx, kind, x, y, s, t, L) {
 function drawMood(ctx, W, H, mood, t) {
   if (mood === 'flashback') { ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = '#d8c39a'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
   const vig = (c, a) => { const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75); g.addColorStop(0, c + '0'); g.addColorStop(1, c + a); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); };
-  if (mood === 'danger') { const p = .55 + .25 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = p; vig('rgba(200,20,30,', '.85)'); ctx.restore(); }
-  else if (mood === 'tense') vig('rgba(0,0,0,', '.75)');
+  if (mood === 'danger') { const p = .55 + .25 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = p; vig('rgba(200,20,30,', S.__drawP?.charStyle === 'cine' && !S.__drawP?.cineDark ? '.35)' : '.85)'); ctx.restore(); }
+  else if (mood === 'tense') vig('rgba(0,0,0,', S.__drawP?.charStyle === 'cine' && !S.__drawP?.cineDark ? '.3)' : '.75)');
   else if (mood === 'mystery') { if (S.__drawP?.charStyle !== 'cine') vig('rgba(0,0,0,', '.88)'); }
   else if (mood === 'hope') { const g = ctx.createRadialGradient(W * .8, H * .1, 10, W * .8, H * .1, Math.max(W, H)); g.addColorStop(0, 'rgba(255,214,140,.35)'); g.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
   else vig('rgba(0,0,0,', '.38)');
@@ -1804,10 +1806,11 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
   const shot = p.hero?.shot || 'wide', near = shot !== 'wide' && p.hero?.who !== 'none';
   PLACE_FX.fall = p.hero?.pose === 'fall'; PLACE_FX.cabin = p.place === 'cabin'; PLACE_FX.drive = p.hero?.pose === 'drive' || (p.things || []).some(x => x.anim === 'drive');
   const env = near ? drawPlaceBlur(ctx, W, H, p.place || 'city', p.time || 'day', t, cam, p, shot === 'close' ? 7 : 4) : drawPlace(ctx, W, H, p.place || 'city', p.time || 'day', t, cam, p);
-  drawThings(ctx, W, H, p.things, t, d, 'back');
   /* characters live in the world layer (parallax 0); close/medium frame the face like a cartoon close-up */
   const vertical = H > W, cn = isCine(), ch = shot === 'close' ? (cn ? (vertical ? H * 2.2 : H * 3.2) : vertical ? H * 1.25 : H * 1.9) : shot === 'medium' ? (cn ? (vertical ? H * 1.2 : H * 1.7) : vertical ? H * .82 : H * 1.15) : (vertical ? H * .44 : H * .66);
   const gy = shot === 'close' ? H * .42 + ch * (cn ? .92 : .71) : shot === 'medium' ? H * (cn ? .34 : .36) + ch * (cn ? .92 : .71) : H * .8;
+  const chW = vertical ? H * .44 : H * .66, world = { pivot: gy, wpivot: H * .8, ground: H * .82, z: cam.z * ch / chW, cx: cam.x, ch: chW, skip: shot !== 'wide' };
+  drawThings(ctx, W, H, p.things, t, d, 'back', world);
   ctx.save(); ctx.translate(W / 2, gy); ctx.scale(cam.z, cam.z); ctx.translate(-W / 2 - cam.x, -gy);
   if (p.crowd && !near) { const r = seeded(5); for (let i = 0; i < 9; i++) { ctx.save(); ctx.translate(W * (r() * 1.1 - .05), gy - H * .01); drawPerson(ctx, castOf(P, 'friend'), { h: ch * (.62 + r() * .1), facing: r() > .5 ? 1 : -1, silhouette: true, pose: 'stand', phase: i }, t); ctx.restore(); } }
   const extras = shot === 'close' ? [] : (p.extras || []).slice(0, shot === 'medium' ? 1 : 3);
@@ -1836,7 +1839,7 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
   }
   ctx.restore();
   env.fg?.();
-  drawThings(ctx, W, H, p.things, t, d, 'front');
+  drawThings(ctx, W, H, p.things, t, d, 'front', world);
   drawMood(ctx, W, H, p.mood || 'normal', t);
   /* stage label: "NÍVEL 3 · GERENTE" */
   if (p.label) {
@@ -2850,13 +2853,32 @@ function thingMotion(th, t, d) {
     default: return { x: x0, y: y0 + Math.sin(t * 2) * .006, rot: 0, face: dir };
   }
 }
-function drawThings(ctx, W, H, things, t, d, layer) {
+/* ground things sit on the same floor line as the people, at real-world size: [bottom (in s), width in person heights] */
+const THING_GROUND = { dog: [.25, .55], cat: [.21, .32], horse: [.37, 1.3], cow: [.33, 1.25], pig: [.19, .65], chicken: [.22, .3], rat: [.1, .18], lion: [.3, 1.15], monkey: [.16, .45],
+  bus2: [.195, 3], truck: [.195, 3], moto2: [.24, 1.1], bike: [.24, .95], train: [.15, 4], suitcase: [.295, .55], coffin: [.4, .9], tv2: [.295, .6], cash_case: [.18, .3], car2: [.16, 1.75] };
+const CAR_REAL = { hatch: 1.75, sedan: 1.9, suv: 1.95, pickup: 2.1, van: 2.0, sports: 1.9, supercar: 1.95, convertible: 1.9, classic: 2.0, limo: 2.5, taxi: 1.9, police2: 1.9, beater: 1.75, motorhome: 2.6 };
+const GROUND_ANIMS = new Set(['idle', 'drive', 'run', 'shake', 'bounce', undefined, '']);
+function groundOf(th) {
+  if (!GROUND_ANIMS.has(th.anim)) return null;
+  const P = CAR_PROFILES[th.type]; if (P) return { b: .06 + P.r * (isCine() ? .95 : 1), real: CAR_REAL[th.type] || 1.9, big: 1 };
+  const g = THING_GROUND[th.type]; return g ? { b: g[0], real: g[1], big: g[1] > 1 } : null;
+}
+function drawThings(ctx, W, H, things, t, d, layer, world) {
   const m = Math.min(W, H);
   for (const th of things || []) {
     if ((th.front ? 'front' : 'back') !== layer) continue;
     const f = (isCine() && CINE_DRAW[th.type]) || THING_DRAW[th.type]; if (!f) continue;
-    const mo = thingMotion(th, t, d), s = m * clamp(Number(th.size) || .5, .1, 2.5) * (H > W ? 1 : .8);
-    ctx.save(); ctx.translate(mo.x * W, mo.y * H); ctx.rotate(mo.rot); if (mo.face < 0) ctx.scale(-1, 1);
+    const mo = thingMotion(th, t, d), g = world && groundOf(th);
+    if (g && world.skip) continue;
+    let s = m * clamp(Number(th.size) || .5, .1, 2.5) * (H > W ? 1 : .8);
+    ctx.save();
+    if (g) {
+      s = Math.min(g.real * (g.big ? .85 : 1) * world.ch, W * (g.big ? 1.15 : 1.05));
+      const y0 = clamp(Number.isFinite(+th.y) ? +th.y : .6, -.2, 1.2), hop = (mo.y - y0) * H;
+      ctx.translate(W / 2, world.pivot); ctx.scale(world.z, world.z); ctx.translate(-W / 2 - (world.cx || 0), -world.wpivot);
+      ctx.translate(mo.x * W, world.ground - g.b * s + (th.front ? H * .025 : -H * .008) + hop);
+    } else ctx.translate(mo.x * W, mo.y * H);
+    ctx.rotate(mo.rot); if (mo.face < 0) ctx.scale(-1, 1);
     const run = c => { try { f(c, s, t, th.anim || 'idle', W, H, th); } catch (e) { console.warn('thing', th.type, e); } };
     if (isCine() && !CINE_FX.has(th.type)) cineLayer(ctx, [-s * 1.1, -s * 1.1, s * 1.1, s * .9], run, 1, CINE_DRAW[th.type] ? 1 : .72); else run(ctx);
     ctx.restore();
@@ -3207,7 +3229,8 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
 }
 
 /* ---------- scene light: clear for normal videos, low-key only for mystery / horror ---------- */
-const CINE_DARK = { mystery: .84, tense: .5, danger: .5 };
+const CINE_DARK = { mystery: .84, tense: .62, danger: .62, normal: .5, hope: .4, flashback: .5 };
+const CLIMAS = [['claro', '☀️ Clara (normal)'], ['escuro', '🌙 Escura (terror / suspense)']];
 const CINE_INDOOR = new Set(['office', 'room', 'prison', 'school', 'hospital', 'shop', 'bank', 'market', 'kitchen', 'living', 'mansion', 'church', 'court', 'police', 'gym', 'club', 'restaurant', 'classroom', 'lab', 'bedroom', 'barber', 'salon', 'bathroom', 'dentist', 'market2', 'cafe', 'homeoffice', 'cabin', 'airport', 'car']);
 const CINE_OPEN = new Set(['sky', 'sea', 'space', 'underwater', 'void']);
 const CM = { cv: null, c: null };
@@ -3233,7 +3256,7 @@ function cineGrain(ctx, W, H, t) {
   ctx.save(); ctx.globalAlpha = .035; ctx.globalCompositeOperation = 'overlay'; const ox = (t * 997) % 192, oy = (t * 613) % 192; ctx.translate(-ox, -oy); CG.pat = CG.pat || ctx.createPattern(CG.cv, 'repeat'); ctx.fillStyle = CG.pat; ctx.fillRect(0, 0, W + 192, H + 192); ctx.restore();
 }
 function cinePost(ctx, W, H, s, t) {
-  const p = s.p || {}, mood = p.mood || 'normal', dark = CINE_DARK[mood] || 0;
+  const p = s.p || {}, mood = p.mood || 'normal', dark = (S.__drawP || {}).cineDark ? (s.kind === 'obj' ? (mood === 'normal' ? 0 : .5) : CINE_DARK[mood] || .5) : 0;
   ctx.save();
   ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = `rgba(128,128,128,${dark ? .4 : .1})`; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = dark ? 'rgba(70,45,30,.35)' : 'rgba(255,226,190,.2)'; ctx.fillRect(0, 0, W, H);
@@ -3275,9 +3298,16 @@ function drawCineCaptions(ctx, g, W, H, y, t, m, maxW) {
 }
 
 const CINE_GUIDE = `Estilo cinemático (padrão do app): personagens com proporção real, sem contorno, luz de cinema.
-Iluminação: histórias normais (humor, dinheiro, dia a dia, motivação, curiosidade, notícia) usam mood "normal" ou "hope" e ficam CLARAS. Só use mood "mystery" (cena escura com feixe de luz, poste, lanterna) em terror, mistério, crime pesado ou suspense de verdade; "tense"/"danger" escurecem um pouco.
+Iluminação: siga a ILUMINAÇÃO ESCOLHIDA pelo usuário (vem no pedido). Sem escolha, tudo CLARO, mood "normal"/"hope".
 Em suspense/terror: abra com um gancho visual forte (obj "lock" com a notificação estranha, ou close assustado), use "shot":"close" nas reações, objetos como celular/porta/portão; perto do fim faça a pergunta para o público com obj "choice" (ex.: a:"PORTÃO", b:"QUARTO", cta:"QUAL VOCÊ DEIXARIA ENTRAR?") e, se for série, termine com obj "part2" (bg "dark").
+Carro, moto, animal ou objeto no chão junto com personagem: use shot "wide" (o app encaixa no chão, no tamanho real, atrás ou na frente da pessoa).
 Legendas: em cada fala marque UMA palavra-chave com *asteriscos* (vira uma caixa vermelha na tela).`;
+
+function climaBrief(c) {
+  return c === 'escuro'
+    ? '\nILUMINAÇÃO ESCOLHIDA: ESCURA (terror/suspense). Use mood "mystery" nas cenas de tensão e "tense"/"danger" nos sustos; cenas de noite.\n'
+    : '\nILUMINAÇÃO ESCOLHIDA: CLARA. NUNCA use mood "mystery"; prefira time "day" e mood "normal"/"hope". O gancho forte vem do texto, da ação e do close, não do escuro.\n';
+}
 
 /* ---- cinethings.js ---- */
 /* ============ CINE THINGS: elementos redesenhados no padrão cinemático (proporção real, sem contorno, sombreado suave) ============ */
@@ -5195,8 +5225,8 @@ DRAW.talk = (ctx, L, W, H, t, d, p) => {
     if (cur.who !== 'narrator') { const who = castOf(P, cur.who); ctx.save(); ctx.font = `800 ${m * .036}px "Poppins", ${FALLBACK}`; const nm = String(who.name || '').toUpperCase(), tw = ctx.measureText(nm).width, hh = m * .066, x = W / 2 - tw / 2 - m * .03, y = H * (vertical ? .1 : .07); rr(ctx, x, y, tw + m * .06, hh, hh / 2); ctx.fillStyle = who.topColor || L.a1; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, m * .004); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.fillText(nm, x + m * .03, y + hh / 2 + 1); ctx.restore(); }
     return;
   }
-  const env = drawPlace(ctx, W, H, p.place || 'room', p.time || 'day', t, cam, p);
-  drawThings(ctx, W, H, p.things, t, d, 'back');
+  const env = drawPlace(ctx, W, H, p.place || 'room', p.time || 'day', t, cam, p), world = { pivot: gy, wpivot: gy, ground: gy + H * .02, z: cam.z, cx: cam.x, ch };
+  drawThings(ctx, W, H, p.things, t, d, 'back', world);
   ctx.save(); ctx.translate(W / 2, gy); ctx.scale(cam.z, cam.z); ctx.translate(-W / 2 - cam.x, -gy);
   const avg = chars.reduce((a, _, j) => a + xOf(j), 0) / Math.max(1, chars.length);
   const order = chars.map((_, j) => j).sort((a, b) => (cur && chars[a].who === cur.who ? 1 : 0) - (cur && chars[b].who === cur.who ? 1 : 0));
@@ -5212,7 +5242,7 @@ DRAW.talk = (ctx, L, W, H, t, d, p) => {
   }
   ctx.restore();
   env.fg?.();
-  drawThings(ctx, W, H, p.things, t, d, 'front');
+  drawThings(ctx, W, H, p.things, t, d, 'front', world);
   drawMood(ctx, W, H, p.mood || 'normal', t);
   /* name tag over whoever is speaking */
   if (cur && cur.who !== 'narrator' && idx(cur.who) >= 0) {
@@ -5391,7 +5421,7 @@ Para onde a história vai: ${nv.arc || 'decida você, mantendo coerência'}
 Elenco fixo (use exatamente estes ids e mantenha a personalidade): ${nvCastBrief(nv.cast)}
 Episódios anteriores:
 ${prev.map(e => `Ep ${e.n} · ${e.title}: ${e.summary} Gancho: ${e.cliff}`).join('\n') || '(nenhum)'}
-${blueprintBrief(bpOf(nv.bpId), seconds)}${brandBrief(chOf(nv.channelId))}Escreva agora o EPISÓDIO ${n}. Comece com o narrador lembrando o gancho anterior em 1 frase curta (até 3 s) e entre direto no conflito.${wish ? `\nO que o autor quer neste episódio: "${wish}".` : ''}
+${blueprintBrief(bpOf(nv.bpId), seconds)}${brandBrief(chOf(nv.channelId))}${climaBrief(OPT.nvClima)}Escreva agora o EPISÓDIO ${n}. Comece com o narrador lembrando o gancho anterior em 1 frase curta (até 3 s) e entre direto no conflito.${wish ? `\nO que o autor quer neste episódio: "${wish}".` : ''}
 ${NOVELA_RULES}
 Se precisar de personagem novo, inclua em "newCast" no mesmo formato: ${NV_CAST_GUIDE.split('\n')[1]}
 ${EP_FORMAT(seconds)}
@@ -5436,7 +5466,7 @@ async function startNovela(useAI) {
   step('brief', 'done', `${opt.genre} · ${fmtDur(opt.seconds)}`); step('write', 'run');
   FLOW = new AbortController(); const live = $('#liveText'); live.hidden = false; live.textContent = 'Pensando…';
   try {
-    nv.bpId = BP.sel || ''; nv.channelId = CH.sel || ''; const r = await createNovela(premise + blueprintBrief(bpOf(BP.sel), opt.seconds) + brandBrief(chOf(CH.sel)), opt, FLOW.signal, ({ text }) => { const n = (text.match(/"(?:text|say)"\s*:/g) || []).length; const last = [...text.matchAll(/"(?:text|say)"\s*:\s*"([^"]{3,120})"/g)].pop(); live.textContent = `${n} falas escritas${last ? `\n“${last[1]}”` : ''}`; });
+    nv.bpId = BP.sel || ''; nv.channelId = CH.sel || ''; const r = await createNovela(premise + blueprintBrief(bpOf(BP.sel), opt.seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.nvClima), opt, FLOW.signal, ({ text }) => { const n = (text.match(/"(?:text|say)"\s*:/g) || []).length; const last = [...text.matchAll(/"(?:text|say)"\s*:\s*"([^"]{3,120})"/g)].pop(); live.textContent = `${n} falas escritas${last ? `\n“${last[1]}”` : ''}`; });
     Object.assign(nv, { title: r.title, logline: r.logline || premise, bible: r.bible, arc: r.arc, cast: r.cast }); post = r.post;
     step('write', 'done', `${r.cast.length} personagens · ${r.episode.scenes.length} cenas`); step('voice', 'run');
     assignVoices(nv.cast, nv.narrator); step('voice', 'done', nv.cast.map(c => `${c.name}: ${TTS_VOICES.find(v => v.id === c.voice)?.label.split(' ·')[0]}`).join(' · '));
@@ -5519,6 +5549,7 @@ function initNovelaHome() {
   OPT.nvGenre = NVO.genre; OPT.nvSecs = NVO.seconds;
   chipSet('[data-opt="nvGenre"]', NV_GENRES.map(g => [g, g]), 'nvGenre', v => (NVO.genre = v));
   chipSet('[data-opt="nvSecs"]', NV_SECS, 'nvSecs', v => (NVO.seconds = v));
+  chipSet('[data-opt="nvClima"]', CLIMAS, 'nvClima');
   $('#nvGo').onclick = () => startNovela(true);
   $('#nvLocal').onclick = () => startNovela(false);
   $('#nvLib').onclick = e => { const b = e.target.closest('[data-nva]'); if (!b) return; const id = b.closest('[data-nv]').dataset.nv; if (b.dataset.nva === 'next') nextEpisodeModal(id); else openEpisode(id, +b.dataset.n); };
@@ -5922,7 +5953,7 @@ function openViralModal() {
 
 /* ---- ui.js ---- */
 /* ============ UI: views, player, board, studio, timeline ============ */
-const OPT = { mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
+const OPT = { clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
 const EXAMPLES = [
   'Explique em 1 minuto o que é um atendente de IA no WhatsApp e por que clínicas estão usando',
   'Os 4 passos para criar uma landing page que converte, para pequenos negócios',
@@ -5982,6 +6013,7 @@ function initHome() {
   chipSet('[data-opt="aspect"]', Object.keys(ASPECTS).map(a => [a, a]), 'aspect', v => { DEMO.aspect = v; sizeDemo(); });
   chipSet('[data-opt="seconds"]', DUR_CHOICES.map(([v, l]) => [v, l]), 'seconds', v => { $('#customSec').hidden = v !== 0; if (v === 0) $('#customSec').focus(); });
   chipSet('[data-opt="tone"]', TONES.map(t => [t, t]), 'tone');
+  chipSet('[data-opt="clima"]', CLIMAS, 'clima');
   chipSet('[data-opt="aspectF"]', Object.keys(ASPECTS).map(a => [a, a]), 'aspectF');
   chipSet('[data-opt="capPreset"]', Object.entries(CAPTION_PRESETS).map(([k, v]) => [k, v.name]), 'capPreset');
   swatchSet('[data-opt="look"]', 'look'); swatchSet('[data-opt="lookF"]', 'lookF');
@@ -6069,8 +6101,8 @@ async function startExplainer(useAI) {
       live.textContent = `${chap}${n} ${n === 1 ? 'cena escrita' : 'cenas escritas'}${last ? `\n“${last[1].replace(/\*/g, '')}”` : ''}`;
     };
     const r = story
-      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
-      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
+      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
+      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
     if (r.cast) P.cast = r.cast; if (r.post) P.post = r.post; if (BP.sel) P.blueprint = { id: BP.sel, name: bpOf(BP.sel)?.bp.name }; if (CH.sel) P.channel = { id: CH.sel, name: chOf(CH.sel)?.name };
     step('write', 'done', `${r.scenes.length} cenas · ${fmtDur(r.scenes.reduce((a, s) => a + s.dur, 0))}`); step('build', 'run');
     await fontsReady(); P.title = r.title || 'Explicativo'; P.scenes = r.scenes; step('build', 'done');
@@ -6468,7 +6500,7 @@ function renderPane() {
       ${P.mode === 'footage' ? `<label class="field"><span>Enquadramento do vídeo</span><select class="input" data-k="proj" data-f="fit"><option value="cover" ${P.fit === 'cover' ? 'selected' : ''}>Preencher (corta as bordas)</option><option value="blur" ${P.fit === 'blur' ? 'selected' : ''}>Inteiro com fundo desfocado</option></select></label>` : ''}</div>
       <div class="group"><label class="toggle"><span>Contador de cenas e título no quadro</span><input type="checkbox" data-k="proj" data-f="chrome" ${P.chrome ? 'checked' : ''}></label>
       <label class="toggle"><span>Barra de progresso no topo</span><input type="checkbox" data-k="proj" data-f="progressBar" ${P.progressBar ? 'checked' : ''}></label></div>`;
-    if (P.mode !== 'footage') h += `<div class="group"><label class="field"><span>Estilo dos personagens</span><select class="input" data-act="charStyle"><option value="cine" ${P.charStyle === 'cine' ? 'selected' : ''}>Cinemático (realista, sem contorno)</option><option value="toon" ${(P.charStyle || 'toon') === 'toon' ? 'selected' : ''}>Cartoon (contorno, cabeça grande)</option><option value="classic" ${P.charStyle === 'classic' ? 'selected' : ''}>Clássico (bonequinho)</option></select></label></div>`;
+    if (P.mode !== 'footage') h += `<div class="group"><label class="field"><span>Estilo dos personagens</span><select class="input" data-act="charStyle"><option value="cine" ${P.charStyle === 'cine' ? 'selected' : ''}>Cinemático (realista, sem contorno)</option><option value="toon" ${(P.charStyle || 'toon') === 'toon' ? 'selected' : ''}>Cartoon (contorno, cabeça grande)</option><option value="classic" ${P.charStyle === 'classic' ? 'selected' : ''}>Clássico (bonequinho)</option></select></label><label class="toggle"><span>Clima escuro (só terror / suspense)</span><input type="checkbox" data-k="proj" data-f="cineDark" ${P.cineDark ? 'checked' : ''}></label></div>`;
     if (P.mode === 'story') h += castPaneHTML(P);
   }
   if (TAB === 'post') h += postHTML(P);

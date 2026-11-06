@@ -138,7 +138,7 @@ function defaultDur(kind, p = {}) {
 
 function newProject(mode = 'explainer', aspect = '9:16') {
   return {
-    id: uid(), title: 'Projeto sem nome', mode, aspect, fps: 30, look: 'moove',
+    id: uid(), title: 'Projeto sem nome', mode, aspect, fps: 30, look: 'moove', cineDark: typeof OPT !== 'undefined' && (mode === 'novela' || OPT.mode === 'novela' ? OPT.nvClima : OPT.clima) === 'escuro',
     chrome: mode === 'explainer', progressBar: mode === 'story', fit: 'cover',
     charStyle: 'cine', captions: { on: mode !== 'explainer', preset: mode === 'footage' ? 'box' : 'cine', pos: mode === 'footage' ? .74 : .7, upper: false, words: 3, accent: null },
     music: { kind: mode === 'footage' ? 'none' : 'pulse', vol: mode === 'story' ? .22 : .35, buffer: null, name: '' },

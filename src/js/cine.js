@@ -178,7 +178,8 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
 }
 
 /* ---------- scene light: clear for normal videos, low-key only for mystery / horror ---------- */
-const CINE_DARK = { mystery: .84, tense: .5, danger: .5 };
+const CINE_DARK = { mystery: .84, tense: .62, danger: .62, normal: .5, hope: .4, flashback: .5 };
+const CLIMAS = [['claro', '☀️ Clara (normal)'], ['escuro', '🌙 Escura (terror / suspense)']];
 const CINE_INDOOR = new Set(['office', 'room', 'prison', 'school', 'hospital', 'shop', 'bank', 'market', 'kitchen', 'living', 'mansion', 'church', 'court', 'police', 'gym', 'club', 'restaurant', 'classroom', 'lab', 'bedroom', 'barber', 'salon', 'bathroom', 'dentist', 'market2', 'cafe', 'homeoffice', 'cabin', 'airport', 'car']);
 const CINE_OPEN = new Set(['sky', 'sea', 'space', 'underwater', 'void']);
 const CM = { cv: null, c: null };
@@ -204,7 +205,7 @@ function cineGrain(ctx, W, H, t) {
   ctx.save(); ctx.globalAlpha = .035; ctx.globalCompositeOperation = 'overlay'; const ox = (t * 997) % 192, oy = (t * 613) % 192; ctx.translate(-ox, -oy); CG.pat = CG.pat || ctx.createPattern(CG.cv, 'repeat'); ctx.fillStyle = CG.pat; ctx.fillRect(0, 0, W + 192, H + 192); ctx.restore();
 }
 function cinePost(ctx, W, H, s, t) {
-  const p = s.p || {}, mood = p.mood || 'normal', dark = CINE_DARK[mood] || 0;
+  const p = s.p || {}, mood = p.mood || 'normal', dark = (S.__drawP || {}).cineDark ? (s.kind === 'obj' ? (mood === 'normal' ? 0 : .5) : CINE_DARK[mood] || .5) : 0;
   ctx.save();
   ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = `rgba(128,128,128,${dark ? .4 : .1})`; ctx.fillRect(0, 0, W, H);
   ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = dark ? 'rgba(70,45,30,.35)' : 'rgba(255,226,190,.2)'; ctx.fillRect(0, 0, W, H);
@@ -246,6 +247,13 @@ function drawCineCaptions(ctx, g, W, H, y, t, m, maxW) {
 }
 
 const CINE_GUIDE = `Estilo cinemático (padrão do app): personagens com proporção real, sem contorno, luz de cinema.
-Iluminação: histórias normais (humor, dinheiro, dia a dia, motivação, curiosidade, notícia) usam mood "normal" ou "hope" e ficam CLARAS. Só use mood "mystery" (cena escura com feixe de luz, poste, lanterna) em terror, mistério, crime pesado ou suspense de verdade; "tense"/"danger" escurecem um pouco.
+Iluminação: siga a ILUMINAÇÃO ESCOLHIDA pelo usuário (vem no pedido). Sem escolha, tudo CLARO, mood "normal"/"hope".
 Em suspense/terror: abra com um gancho visual forte (obj "lock" com a notificação estranha, ou close assustado), use "shot":"close" nas reações, objetos como celular/porta/portão; perto do fim faça a pergunta para o público com obj "choice" (ex.: a:"PORTÃO", b:"QUARTO", cta:"QUAL VOCÊ DEIXARIA ENTRAR?") e, se for série, termine com obj "part2" (bg "dark").
+Carro, moto, animal ou objeto no chão junto com personagem: use shot "wide" (o app encaixa no chão, no tamanho real, atrás ou na frente da pessoa).
 Legendas: em cada fala marque UMA palavra-chave com *asteriscos* (vira uma caixa vermelha na tela).`;
+
+function climaBrief(c) {
+  return c === 'escuro'
+    ? '\nILUMINAÇÃO ESCOLHIDA: ESCURA (terror/suspense). Use mood "mystery" nas cenas de tensão e "tense"/"danger" nos sustos; cenas de noite.\n'
+    : '\nILUMINAÇÃO ESCOLHIDA: CLARA. NUNCA use mood "mystery"; prefira time "day" e mood "normal"/"hope". O gancho forte vem do texto, da ação e do close, não do escuro.\n';
+}

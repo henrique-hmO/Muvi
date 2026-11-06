@@ -290,8 +290,8 @@ function drawIcon(ctx, kind, x, y, s, t, L) {
 function drawMood(ctx, W, H, mood, t) {
   if (mood === 'flashback') { ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, W, H); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = '#d8c39a'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
   const vig = (c, a) => { const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75); g.addColorStop(0, c + '0'); g.addColorStop(1, c + a); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); };
-  if (mood === 'danger') { const p = .55 + .25 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = p; vig('rgba(200,20,30,', '.85)'); ctx.restore(); }
-  else if (mood === 'tense') vig('rgba(0,0,0,', '.75)');
+  if (mood === 'danger') { const p = .55 + .25 * Math.sin(t * 6); ctx.save(); ctx.globalAlpha = p; vig('rgba(200,20,30,', S.__drawP?.charStyle === 'cine' && !S.__drawP?.cineDark ? '.35)' : '.85)'); ctx.restore(); }
+  else if (mood === 'tense') vig('rgba(0,0,0,', S.__drawP?.charStyle === 'cine' && !S.__drawP?.cineDark ? '.3)' : '.75)');
   else if (mood === 'mystery') { if (S.__drawP?.charStyle !== 'cine') vig('rgba(0,0,0,', '.88)'); }
   else if (mood === 'hope') { const g = ctx.createRadialGradient(W * .8, H * .1, 10, W * .8, H * .1, Math.max(W, H)); g.addColorStop(0, 'rgba(255,214,140,.35)'); g.addColorStop(1, 'rgba(255,214,140,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
   else vig('rgba(0,0,0,', '.38)');
@@ -313,10 +313,11 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
   const shot = p.hero?.shot || 'wide', near = shot !== 'wide' && p.hero?.who !== 'none';
   PLACE_FX.fall = p.hero?.pose === 'fall'; PLACE_FX.cabin = p.place === 'cabin'; PLACE_FX.drive = p.hero?.pose === 'drive' || (p.things || []).some(x => x.anim === 'drive');
   const env = near ? drawPlaceBlur(ctx, W, H, p.place || 'city', p.time || 'day', t, cam, p, shot === 'close' ? 7 : 4) : drawPlace(ctx, W, H, p.place || 'city', p.time || 'day', t, cam, p);
-  drawThings(ctx, W, H, p.things, t, d, 'back');
   /* characters live in the world layer (parallax 0); close/medium frame the face like a cartoon close-up */
   const vertical = H > W, cn = isCine(), ch = shot === 'close' ? (cn ? (vertical ? H * 2.2 : H * 3.2) : vertical ? H * 1.25 : H * 1.9) : shot === 'medium' ? (cn ? (vertical ? H * 1.2 : H * 1.7) : vertical ? H * .82 : H * 1.15) : (vertical ? H * .44 : H * .66);
   const gy = shot === 'close' ? H * .42 + ch * (cn ? .92 : .71) : shot === 'medium' ? H * (cn ? .34 : .36) + ch * (cn ? .92 : .71) : H * .8;
+  const chW = vertical ? H * .44 : H * .66, world = { pivot: gy, wpivot: H * .8, ground: H * .82, z: cam.z * ch / chW, cx: cam.x, ch: chW, skip: shot !== 'wide' };
+  drawThings(ctx, W, H, p.things, t, d, 'back', world);
   ctx.save(); ctx.translate(W / 2, gy); ctx.scale(cam.z, cam.z); ctx.translate(-W / 2 - cam.x, -gy);
   if (p.crowd && !near) { const r = seeded(5); for (let i = 0; i < 9; i++) { ctx.save(); ctx.translate(W * (r() * 1.1 - .05), gy - H * .01); drawPerson(ctx, castOf(P, 'friend'), { h: ch * (.62 + r() * .1), facing: r() > .5 ? 1 : -1, silhouette: true, pose: 'stand', phase: i }, t); ctx.restore(); } }
   const extras = shot === 'close' ? [] : (p.extras || []).slice(0, shot === 'medium' ? 1 : 3);
@@ -345,7 +346,7 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
   }
   ctx.restore();
   env.fg?.();
-  drawThings(ctx, W, H, p.things, t, d, 'front');
+  drawThings(ctx, W, H, p.things, t, d, 'front', world);
   drawMood(ctx, W, H, p.mood || 'normal', t);
   /* stage label: "NÍVEL 3 · GERENTE" */
   if (p.label) {

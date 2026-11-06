@@ -94,13 +94,32 @@ function thingMotion(th, t, d) {
     default: return { x: x0, y: y0 + Math.sin(t * 2) * .006, rot: 0, face: dir };
   }
 }
-function drawThings(ctx, W, H, things, t, d, layer) {
+/* ground things sit on the same floor line as the people, at real-world size: [bottom (in s), width in person heights] */
+const THING_GROUND = { dog: [.25, .55], cat: [.21, .32], horse: [.37, 1.3], cow: [.33, 1.25], pig: [.19, .65], chicken: [.22, .3], rat: [.1, .18], lion: [.3, 1.15], monkey: [.16, .45],
+  bus2: [.195, 3], truck: [.195, 3], moto2: [.24, 1.1], bike: [.24, .95], train: [.15, 4], suitcase: [.295, .55], coffin: [.4, .9], tv2: [.295, .6], cash_case: [.18, .3], car2: [.16, 1.75] };
+const CAR_REAL = { hatch: 1.75, sedan: 1.9, suv: 1.95, pickup: 2.1, van: 2.0, sports: 1.9, supercar: 1.95, convertible: 1.9, classic: 2.0, limo: 2.5, taxi: 1.9, police2: 1.9, beater: 1.75, motorhome: 2.6 };
+const GROUND_ANIMS = new Set(['idle', 'drive', 'run', 'shake', 'bounce', undefined, '']);
+function groundOf(th) {
+  if (!GROUND_ANIMS.has(th.anim)) return null;
+  const P = CAR_PROFILES[th.type]; if (P) return { b: .06 + P.r * (isCine() ? .95 : 1), real: CAR_REAL[th.type] || 1.9, big: 1 };
+  const g = THING_GROUND[th.type]; return g ? { b: g[0], real: g[1], big: g[1] > 1 } : null;
+}
+function drawThings(ctx, W, H, things, t, d, layer, world) {
   const m = Math.min(W, H);
   for (const th of things || []) {
     if ((th.front ? 'front' : 'back') !== layer) continue;
     const f = (isCine() && CINE_DRAW[th.type]) || THING_DRAW[th.type]; if (!f) continue;
-    const mo = thingMotion(th, t, d), s = m * clamp(Number(th.size) || .5, .1, 2.5) * (H > W ? 1 : .8);
-    ctx.save(); ctx.translate(mo.x * W, mo.y * H); ctx.rotate(mo.rot); if (mo.face < 0) ctx.scale(-1, 1);
+    const mo = thingMotion(th, t, d), g = world && groundOf(th);
+    if (g && world.skip) continue;
+    let s = m * clamp(Number(th.size) || .5, .1, 2.5) * (H > W ? 1 : .8);
+    ctx.save();
+    if (g) {
+      s = Math.min(g.real * (g.big ? .85 : 1) * world.ch, W * (g.big ? 1.15 : 1.05));
+      const y0 = clamp(Number.isFinite(+th.y) ? +th.y : .6, -.2, 1.2), hop = (mo.y - y0) * H;
+      ctx.translate(W / 2, world.pivot); ctx.scale(world.z, world.z); ctx.translate(-W / 2 - (world.cx || 0), -world.wpivot);
+      ctx.translate(mo.x * W, world.ground - g.b * s + (th.front ? H * .025 : -H * .008) + hop);
+    } else ctx.translate(mo.x * W, mo.y * H);
+    ctx.rotate(mo.rot); if (mo.face < 0) ctx.scale(-1, 1);
     const run = c => { try { f(c, s, t, th.anim || 'idle', W, H, th); } catch (e) { console.warn('thing', th.type, e); } };
     if (isCine() && !CINE_FX.has(th.type)) cineLayer(ctx, [-s * 1.1, -s * 1.1, s * 1.1, s * .9], run, 1, CINE_DRAW[th.type] ? 1 : .72); else run(ctx);
     ctx.restore();

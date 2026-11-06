@@ -1,5 +1,5 @@
 /* ============ UI: views, player, board, studio, timeline ============ */
-const OPT = { mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
+const OPT = { clima: 'claro', nvClima: 'claro', mode: 'explainer', aspect: '9:16', seconds: 60, tone: 'Didático', look: 'moove', aspectF: '9:16', capPreset: 'box', lookF: 'moove' };
 const EXAMPLES = [
   'Explique em 1 minuto o que é um atendente de IA no WhatsApp e por que clínicas estão usando',
   'Os 4 passos para criar uma landing page que converte, para pequenos negócios',
@@ -59,6 +59,7 @@ function initHome() {
   chipSet('[data-opt="aspect"]', Object.keys(ASPECTS).map(a => [a, a]), 'aspect', v => { DEMO.aspect = v; sizeDemo(); });
   chipSet('[data-opt="seconds"]', DUR_CHOICES.map(([v, l]) => [v, l]), 'seconds', v => { $('#customSec').hidden = v !== 0; if (v === 0) $('#customSec').focus(); });
   chipSet('[data-opt="tone"]', TONES.map(t => [t, t]), 'tone');
+  chipSet('[data-opt="clima"]', CLIMAS, 'clima');
   chipSet('[data-opt="aspectF"]', Object.keys(ASPECTS).map(a => [a, a]), 'aspectF');
   chipSet('[data-opt="capPreset"]', Object.entries(CAPTION_PRESETS).map(([k, v]) => [k, v.name]), 'capPreset');
   swatchSet('[data-opt="look"]', 'look'); swatchSet('[data-opt="lookF"]', 'lookF');
@@ -146,8 +147,8 @@ async function startExplainer(useAI) {
       live.textContent = `${chap}${n} ${n === 1 ? 'cena escrita' : 'cenas escritas'}${last ? `\n“${last[1].replace(/\*/g, '')}”` : ''}`;
     };
     const r = story
-      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
-      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
+      ? await planStory(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText, (i, n, title) => { chap = i < 0 ? 'Planejando os capítulos…\n' : `Capítulo ${i + 1} de ${n}: ${title}\n`; live.textContent = chap; step('write', 'run', i < 0 ? 'roteiro geral' : `capítulo ${i + 1}/${n}`); })
+      : await planExplainer(brief + blueprintBrief(bpOf(BP.sel), seconds) + brandBrief(chOf(CH.sel)) + climaBrief(OPT.clima), { seconds, aspect: OPT.aspect, tone: OPT.tone }, FLOW.signal, onText);
     if (r.cast) P.cast = r.cast; if (r.post) P.post = r.post; if (BP.sel) P.blueprint = { id: BP.sel, name: bpOf(BP.sel)?.bp.name }; if (CH.sel) P.channel = { id: CH.sel, name: chOf(CH.sel)?.name };
     step('write', 'done', `${r.scenes.length} cenas · ${fmtDur(r.scenes.reduce((a, s) => a + s.dur, 0))}`); step('build', 'run');
     await fontsReady(); P.title = r.title || 'Explicativo'; P.scenes = r.scenes; step('build', 'done');
@@ -545,7 +546,7 @@ function renderPane() {
       ${P.mode === 'footage' ? `<label class="field"><span>Enquadramento do vídeo</span><select class="input" data-k="proj" data-f="fit"><option value="cover" ${P.fit === 'cover' ? 'selected' : ''}>Preencher (corta as bordas)</option><option value="blur" ${P.fit === 'blur' ? 'selected' : ''}>Inteiro com fundo desfocado</option></select></label>` : ''}</div>
       <div class="group"><label class="toggle"><span>Contador de cenas e título no quadro</span><input type="checkbox" data-k="proj" data-f="chrome" ${P.chrome ? 'checked' : ''}></label>
       <label class="toggle"><span>Barra de progresso no topo</span><input type="checkbox" data-k="proj" data-f="progressBar" ${P.progressBar ? 'checked' : ''}></label></div>`;
-    if (P.mode !== 'footage') h += `<div class="group"><label class="field"><span>Estilo dos personagens</span><select class="input" data-act="charStyle"><option value="cine" ${P.charStyle === 'cine' ? 'selected' : ''}>Cinemático (realista, sem contorno)</option><option value="toon" ${(P.charStyle || 'toon') === 'toon' ? 'selected' : ''}>Cartoon (contorno, cabeça grande)</option><option value="classic" ${P.charStyle === 'classic' ? 'selected' : ''}>Clássico (bonequinho)</option></select></label></div>`;
+    if (P.mode !== 'footage') h += `<div class="group"><label class="field"><span>Estilo dos personagens</span><select class="input" data-act="charStyle"><option value="cine" ${P.charStyle === 'cine' ? 'selected' : ''}>Cinemático (realista, sem contorno)</option><option value="toon" ${(P.charStyle || 'toon') === 'toon' ? 'selected' : ''}>Cartoon (contorno, cabeça grande)</option><option value="classic" ${P.charStyle === 'classic' ? 'selected' : ''}>Clássico (bonequinho)</option></select></label><label class="toggle"><span>Clima escuro (só terror / suspense)</span><input type="checkbox" data-k="proj" data-f="cineDark" ${P.cineDark ? 'checked' : ''}></label></div>`;
     if (P.mode === 'story') h += castPaneHTML(P);
   }
   if (TAB === 'post') h += postHTML(P);
