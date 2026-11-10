@@ -170,7 +170,7 @@ function openAiVoice() {
 function postHTML(P) {
   const X = P.post;
   if (!X) return `<div class="post"><span class="label">Publicação</span><p class="muted" style="margin:0;font-size:12.5px">Títulos, texto da capa, legenda e hashtags prontos para postar, pensados para prender e gerar comentário.</p><button class="btn ai sm" type="button" data-post="gen">Gerar pacote de publicação</button></div>`;
-  const tags = X.hashtags.map(h => '#' + h).join(' ');
+  const tags = fixTags(X.hashtags).map(h => '#' + h).join(' ');
   return `<div class="post"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="label">Publicação</span><div class="chips"><button class="btn sm" type="button" data-post="all">Copiar tudo</button><button class="btn sm ai" type="button" data-post="gen">Gerar de novo</button></div></div>
     <div class="post-block"><b>Títulos</b>${X.titles.map((t, i) => `<div class="post-row"><span>${esc(t)}</span><button class="btn sm ghost" type="button" data-post="t${i}">Copiar</button></div>`).join('')}</div>
     ${X.cover ? `<div class="post-block"><b>Texto da capa</b><div class="post-row"><span class="post-cover">${esc(X.cover)}</span><button class="btn sm ghost" type="button" data-post="cover">Copiar</button></div></div>` : ''}
@@ -187,7 +187,7 @@ async function onPostClick(e) {
     catch (err) { toast(aiErr(err)); b.disabled = false; b.textContent = 'Gerar pacote de publicação'; }
     return;
   }
-  const tags = X.hashtags.map(h => '#' + h).join(' ');
+  const tags = fixTags(X.hashtags).map(h => '#' + h).join(' ');
   if (a[0] === 't' && a !== 'all') return copyText(X.titles[+a.slice(1)], 'Título');
   if (a === 'cover') return copyText(X.cover, 'Texto da capa');
   if (a === 'caption') return copyText(`${X.caption}\n\n${tags}`, 'Legenda');

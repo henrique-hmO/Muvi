@@ -76,13 +76,19 @@ const DOC_GUIDE = `Além das cenas com personagem, você pode usar dois formatos
    O editor envia as fotos depois. Peça fotos reais quando a narração citar pessoas públicas, lugares, empresas ou fatos documentados; descreva a foto com precisão.
 Regras de mistura: para histórias de personagem, use "story" na maior parte e "doc"/"photo" para dados, datas, provas e pessoas reais. Para notícia, política, economia e fatos reais, use principalmente "doc" e "photo". Nunca invente fato, número, data ou fonte: se não tiver certeza, deixe "source" vazio e fale de forma geral.`;
 
-const POST_GUIDE = `"post" (pacote de publicação, focado em retenção e conversão): {"titles":["3 títulos diferentes, até 60 caracteres: curiosidade + benefício ou conflito, números quando couber, sem prometer o que o vídeo não entrega"],"cover":"texto da capa, até 5 palavras grandes","caption":"legenda do post: 1ª linha é um gancho que faz parar o scroll; 2 a 3 linhas curtas de valor; termina com CTA que gera comentário (pergunta ou palavra-chave) e salvar/seguir","hashtags":["5 a 8, misture amplas e de nicho, sem #"],"comment":"comentário fixado que puxa conversa"}`;
+const POST_GUIDE = `"post" (pacote de publicação, focado em retenção e conversão): {"titles":["3 títulos diferentes, até 60 caracteres: curiosidade + benefício ou conflito, números quando couber, sem prometer o que o vídeo não entrega"],"cover":"texto da capa, até 5 palavras grandes","caption":"legenda do post: 1ª linha é um gancho que faz parar o scroll; 2 a 3 linhas curtas de valor; termina com CTA que gera comentário (pergunta ou palavra-chave) e salvar/seguir","hashtags":["EXATAMENTE 4 hashtags do assunto/nicho, sem #, sem fyp (o app coloca #fyp como 5ª)"],"comment":"comentário fixado que puxa conversa"}`;
 const COMPACT = 'Escreva o JSON minificado (sem quebras de linha nem espaços extras) e omita campos opcionais vazios e campos com valor padrão (time "day", mood "normal", camera "push" ou "auto", pose "stand", emotion "neutral", prop "none", facing "right", x 0.5, crowd false, note).';
+/* always 5 hashtags: 4 from the topic + #fyp last */
+function fixTags(list) {
+  const seen = new Set(), out = [];
+  for (const h of list || []) { const t = String(h ?? '').trim().replace(/^#+/, '').replace(/\s+/g, '').slice(0, 40); const k = t.toLowerCase(); if (!t || k === 'fyp' || seen.has(k)) continue; seen.add(k); out.push(t); if (out.length === 4) break; }
+  return [...out, 'fyp'];
+}
 function normPost(x) {
   if (!x || typeof x !== 'object') return null;
   const S = (v, n) => String(v ?? '').trim().slice(0, n);
   const titles = (Array.isArray(x.titles) ? x.titles : [x.title]).map(t => S(t, 90)).filter(Boolean).slice(0, 3);
-  return { titles, cover: S(x.cover, 60), caption: S(x.caption, 1200), hashtags: (Array.isArray(x.hashtags) ? x.hashtags : String(x.hashtags || '').split(/[\s,]+/)).map(h => S(h, 40).replace(/^#/, '')).filter(Boolean).slice(0, 10), comment: S(x.comment, 300) };
+  return { titles, cover: S(x.cover, 60), caption: S(x.caption, 1200), hashtags: fixTags(Array.isArray(x.hashtags) ? x.hashtags : String(x.hashtags || '').split(/[\s,]+/)), comment: S(x.comment, 300) };
 }
 async function genPost(P, signal) {
   const lines = P.scenes.map(s => (s.say || sceneLabel(s) || '').replace(/\*/g, '')).filter(Boolean).join(' ').slice(0, 3500);
