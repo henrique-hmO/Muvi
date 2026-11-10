@@ -531,6 +531,7 @@ function drawCaptions(ctx, L, W, H, P, t) {
     ctx.fillStyle = acc; ctx.fillText(up(w.text), 0, 0); ctx.restore(); return;
   }
   if (C.preset === 'cine') { drawCineCaptions(ctx, g, W, H, y, t, m, maxW); ctx.restore(); return; }
+  if (C.preset === 'conto' && typeof drawContoCaptions === 'function') { drawContoCaptions(ctx, g, W, H, y, t, m, maxW); ctx.restore(); return; }
   if (C.preset === 'toon') {
     const items = g.words.map(w => ({ ...w, s: w.text.replace(/\*/g, '').toUpperCase() }));
     let size = m * .078; ctx.font = `900 ${size}px "Poppins", ${FALLBACK}`; const spc = () => ctx.measureText(' ').width;
