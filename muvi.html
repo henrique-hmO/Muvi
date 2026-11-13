@@ -375,6 +375,41 @@ main { min-height: calc(100% - var(--top)); }
   .row2 { grid-template-columns: 1fr 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* ---------- v2: identidade Moove, menos "cara de IA" ---------- */
+@property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+:root { --r-md: 10px; --r-lg: 16px; --surface: #0a1120; --surface-2: #101a2c; --border: #1a2436; }
+body { background: var(--bg); }
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .05; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+#app, .top { position: relative; z-index: 1; }
+.label { font: 600 12px/1.2 var(--f-sans); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.hero-logo .label { color: var(--faint); font-weight: 500; }
+.home h1 { letter-spacing: -.045em; }
+.home h1 em { color: var(--text); background: none; -webkit-background-clip: border-box; background-clip: border-box; position: relative; white-space: nowrap; }
+.home h1 em::after { content: ""; position: absolute; left: -.04em; right: -.04em; bottom: .04em; height: .14em; background: var(--grad); border-radius: 3px; z-index: -1; opacity: .9; transform: skewX(-12deg); }
+.home h1 { position: relative; z-index: 0; }
+.examples { display: grid; gap: 0; border-top: 1px solid var(--border); }
+.examples button { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; padding: 10px 4px 10px 22px; font-size: 13px; position: relative; background: transparent; }
+.examples button::before { content: "↗"; position: absolute; left: 2px; top: 10px; color: var(--faint); transition: color .15s, transform .15s; }
+.examples button:hover { color: var(--text); background: transparent; }
+.examples button:hover::before { color: var(--ai); transform: translate(2px, -2px); }
+.chip { background: transparent; }
+.chip[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: #0a0f1a; font-weight: 600; }
+.steps button b { font-family: var(--f-sans); }
+
+/* botão que brilha: borda com o degradê Moove girando + halo suave */
+.btn.primary { position: relative; isolation: isolate; border: 1.5px solid transparent; color: #fff;
+  background: linear-gradient(180deg, #2f63ff, #2148d8) padding-box, conic-gradient(from var(--ang), #D44CFF, #6E52FF, #00D2FF, #6E52FF, #D44CFF) border-box;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22); animation: moove-spin 4s linear infinite; }
+.btn.primary::before { content: ""; position: absolute; inset: -3px; border-radius: inherit; z-index: -1; pointer-events: none;
+  background: conic-gradient(from var(--ang), #D44CFF, #6E52FF, #00D2FF, #6E52FF, #D44CFF); filter: blur(12px); opacity: .45; transition: opacity .2s; animation: moove-spin 4s linear infinite; }
+.btn.primary:hover { background: linear-gradient(180deg, #3d6fff, #2a52e6) padding-box, conic-gradient(from var(--ang), #D44CFF, #6E52FF, #00D2FF, #6E52FF, #D44CFF) border-box; }
+.btn.primary:hover::before { opacity: .8; }
+.btn.primary.sm::before { inset: -2px; filter: blur(8px); opacity: .3; }
+.btn.primary:disabled { animation: none; } .btn.primary:disabled::before { opacity: 0; }
+@keyframes moove-spin { to { --ang: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .btn.primary, .btn.primary::before { animation: none; } }
 </style>
 
 <header class="top">
