@@ -416,6 +416,20 @@ body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-in
 .gsap-on .modes button[aria-selected="true"] { background: var(--surface-2) !important; box-shadow: none !important; border-bottom-color: var(--border) !important; }
 .mode-ind { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--grad); border-radius: 2px; pointer-events: none; }
 
+/* ---------- título com corte (alças de timeline) ---------- */
+.trim { --rot: -2.76deg; position: relative; display: inline-block; vertical-align: baseline; padding: .06em .62em .1em; margin: .08em 0 .04em; transform: rotate(var(--rot)); transition: transform .3s ease-out; user-select: none; -webkit-user-select: none; white-space: nowrap; }
+.trim-ghost { color: var(--text); opacity: .13; }
+.trim-text { position: absolute; inset: 0; padding: .06em .62em .1em; color: var(--text); pointer-events: none; }
+.trim-sel { position: absolute; top: 0; bottom: 0; border-radius: .28em; padding: 2px; background: var(--grad); pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  box-shadow: 0 0 28px -6px rgba(110, 82, 255, .55); }
+.trim::after { content: ""; position: absolute; inset: 0; border-radius: .28em; border: 1px dashed rgba(166, 176, 195, .18); pointer-events: none; }
+.trim-h { position: absolute; top: 0; height: 100%; width: 22px; padding: 0; border: 0; border-radius: 999px; background: linear-gradient(180deg, #D44CFF, #6E52FF 55%, #00D2FF); display: grid; place-items: center; cursor: ew-resize; touch-action: none; z-index: 2; transition: transform .15s; box-shadow: 0 4px 14px -4px rgba(0, 0, 0, .6); }
+.trim-h i { width: 3px; height: 38%; border-radius: 3px; background: rgba(255, 255, 255, .92); }
+.trim-h:hover { transform: scaleX(1.12); } .trim-h.on { transform: scale(1.18); }
+.trim-h:focus-visible { outline: 2px solid var(--ai); outline-offset: 3px; }
+.trim.ease .trim-sel, .trim.ease .trim-h { transition: left .35s ease, width .35s ease; }
+@media (max-width: 520px) { .trim-h { width: 18px; } }
 </style>
 
 <header class="top">
@@ -7596,6 +7610,47 @@ onPostClick = (f => async function (e) {
 /* any edit makes the exported file stale */
 afterChange = (f => function (...a) { if (TAB !== 'post' && S.project && TIK.id === S.project.id && !TIK.busy) { TIK.id = null; TIK.blob = null; } return f(...a); })(afterChange);
 
+/* ---- trim.js ---- */
+/* ============ Título com "corte": "vídeo pronto." dentro de um trecho da timeline com alças arrastáveis ============ */
+(function () {
+  const h1 = document.querySelector('.home h1'), em = h1?.querySelector('em'); if (!em || h1.querySelector('.trim')) return;
+  const dot = em.nextSibling; if (dot && dot.nodeType === 3 && dot.textContent.trim() === '.') dot.remove();
+  const label = em.textContent + '.';
+  const T = document.createElement('span'); T.className = 'trim'; T.setAttribute('role', 'group'); T.setAttribute('aria-label', label);
+  T.innerHTML = `<span class="trim-ghost" aria-hidden="true">${label}</span><span class="trim-sel" aria-hidden="true"></span><span class="trim-text" aria-hidden="true">${label}</span>
+    <button type="button" class="trim-h" data-h="l" aria-label="Ajustar início"><i></i></button><button type="button" class="trim-h" data-h="r" aria-label="Ajustar fim"><i></i></button>`;
+  em.replaceWith(T);
+  const BASE = -2.76, MIN = 46, th = BASE * Math.PI / 180, C = Math.cos(th), Sn = Math.sin(th);
+  const sel = T.querySelector('.trim-sel'), txt = T.querySelector('.trim-text'), hl = T.querySelector('[data-h="l"]'), hr = T.querySelector('[data-h="r"]');
+  let W = 0, L = 0, R = 0, drag = null;
+  const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+  function apply() {
+    const hw = hl.offsetWidth || 22;
+    sel.style.left = L + 'px'; sel.style.width = Math.max(0, R - L) + 'px';
+    hl.style.left = L + 'px'; hr.style.left = (R - hw) + 'px';
+    txt.style.clipPath = `inset(0 ${W - R + hw * .5}px 0 ${L + hw * .5}px round .28em)`;
+    const dev = W ? ((L + R) / 2 - W / 2) / (W / 2) : 0;
+    T.style.setProperty('--rot', (BASE + dev * 3).toFixed(2) + 'deg');
+  }
+  function measure() { const was = W; W = T.offsetWidth; if (!was || R >= was - 1) R = W; R = Math.min(R, W); L = Math.min(L, R - MIN); apply(); }
+  const start = e => { const b = e.target.closest('.trim-h'); if (!b) return; e.preventDefault(); b.setPointerCapture?.(e.pointerId); drag = { h: b.dataset.h, x: e.clientX, y: e.clientY, L, R }; T.classList.add('dragging'); b.classList.add('on'); };
+  const move = e => { if (!drag) return; const p = (e.clientX - drag.x) * C + (e.clientY - drag.y) * Sn;
+    if (drag.h === 'l') L = clamp(drag.L + p, 0, R - MIN); else R = clamp(drag.R + p, L + MIN, W); apply(); };
+  const end = () => { if (!drag) return; drag = null; T.classList.remove('dragging'); T.querySelectorAll('.trim-h.on').forEach(b => b.classList.remove('on')); };
+  T.addEventListener('pointerdown', start); addEventListener('pointermove', move); addEventListener('pointerup', end); addEventListener('pointercancel', end);
+  T.addEventListener('keydown', e => { const b = e.target.closest('.trim-h'); if (!b || !/Arrow(Left|Right)/.test(e.key)) return; e.preventDefault(); const d = e.key === 'ArrowLeft' ? -10 : 10;
+    if (b.dataset.h === 'l') L = clamp(L + d, 0, R - MIN); else R = clamp(R + d, L + MIN, W); apply(); });
+  T.addEventListener('dblclick', () => { L = 0; R = W; T.classList.add('ease'); apply(); setTimeout(() => T.classList.remove('ease'), 400); });
+  new ResizeObserver(measure).observe(T); document.fonts?.ready.then(measure); measure();
+  /* abertura: as alças começam juntas no meio e abrem, como quem corta o trecho certo do vídeo */
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const mid = W / 2; L = mid - MIN / 2; R = mid + MIN / 2; apply();
+    const t0 = performance.now() + 750, dur = 1100, ease = k => 1 - Math.pow(1 - k, 4);
+    const step = now => { const k = clamp((now - t0) / dur, 0, 1), e = ease(k), m = W / 2; L = (m - MIN / 2) * (1 - e); R = (m + MIN / 2) + (W - m - MIN / 2) * e; apply(); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+})();
+
 /* ---- uifx.js ---- */
 /* ============ Interface animada com GSAP (prévia) ============ */
 (function () {
@@ -7614,11 +7669,11 @@ afterChange = (f => function (...a) { if (TAB !== 'post' && S.project && TIK.id 
 
       /* 1. abertura da home: título sobe letra por letra, sublinhado se desenha, resto entra em cascata */
       const h1 = document.querySelector('.home h1'), em = h1?.querySelector('em');
-      const split = h1 && SplitText.create(h1, { type: 'words,chars', mask: 'words' });
+      const split = h1 && SplitText.create(h1, { type: 'words,chars', mask: 'words', ignore: '.trim' });
       const tl = gsap.timeline({ delay: .15 });
       tl.from('.hero-logo', { autoAlpha: 0, y: 10 })
         .from(split ? split.chars : [], { yPercent: 110, duration: .9, stagger: .016 }, '<.1')
-        .fromTo(em, { '--u': 0 }, { '--u': 1, duration: .7, ease: 'power3.inOut' }, '-=.45')
+        .fromTo(em || [], { '--u': 0 }, { '--u': 1, duration: .7, ease: 'power3.inOut' }, '-=.45')
         .from('.home .lede', { autoAlpha: 0, y: 14 }, '-=.6')
         .from('.modes button', { autoAlpha: 0, y: 18, stagger: .06 }, '-=.45')
         .from('.home .panel, .home .composer, .home .modes ~ *', { autoAlpha: 0, y: 12, stagger: .05 }, '-=.35')

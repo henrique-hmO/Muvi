@@ -416,6 +416,20 @@ body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-in
 .gsap-on .modes button[aria-selected="true"] { background: var(--surface-2) !important; box-shadow: none !important; border-bottom-color: var(--border) !important; }
 .mode-ind { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--grad); border-radius: 2px; pointer-events: none; }
 
+/* ---------- título com corte (alças de timeline) ---------- */
+.trim { --rot: -2.76deg; position: relative; display: inline-block; vertical-align: baseline; padding: .06em .62em .1em; margin: .08em 0 .04em; transform: rotate(var(--rot)); transition: transform .3s ease-out; user-select: none; -webkit-user-select: none; white-space: nowrap; }
+.trim-ghost { color: var(--text); opacity: .13; }
+.trim-text { position: absolute; inset: 0; padding: .06em .62em .1em; color: var(--text); pointer-events: none; }
+.trim-sel { position: absolute; top: 0; bottom: 0; border-radius: .28em; padding: 2px; background: var(--grad); pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  box-shadow: 0 0 28px -6px rgba(110, 82, 255, .55); }
+.trim::after { content: ""; position: absolute; inset: 0; border-radius: .28em; border: 1px dashed rgba(166, 176, 195, .18); pointer-events: none; }
+.trim-h { position: absolute; top: 0; height: 100%; width: 22px; padding: 0; border: 0; border-radius: 999px; background: linear-gradient(180deg, #D44CFF, #6E52FF 55%, #00D2FF); display: grid; place-items: center; cursor: ew-resize; touch-action: none; z-index: 2; transition: transform .15s; box-shadow: 0 4px 14px -4px rgba(0, 0, 0, .6); }
+.trim-h i { width: 3px; height: 38%; border-radius: 3px; background: rgba(255, 255, 255, .92); }
+.trim-h:hover { transform: scaleX(1.12); } .trim-h.on { transform: scale(1.18); }
+.trim-h:focus-visible { outline: 2px solid var(--ai); outline-offset: 3px; }
+.trim.ease .trim-sel, .trim.ease .trim-h { transition: left .35s ease, width .35s ease; }
+@media (max-width: 520px) { .trim-h { width: 18px; } }
 </style>
 
 <header class="top">

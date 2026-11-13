@@ -15,11 +15,11 @@
 
       /* 1. abertura da home: título sobe letra por letra, sublinhado se desenha, resto entra em cascata */
       const h1 = document.querySelector('.home h1'), em = h1?.querySelector('em');
-      const split = h1 && SplitText.create(h1, { type: 'words,chars', mask: 'words' });
+      const split = h1 && SplitText.create(h1, { type: 'words,chars', mask: 'words', ignore: '.trim' });
       const tl = gsap.timeline({ delay: .15 });
       tl.from('.hero-logo', { autoAlpha: 0, y: 10 })
         .from(split ? split.chars : [], { yPercent: 110, duration: .9, stagger: .016 }, '<.1')
-        .fromTo(em, { '--u': 0 }, { '--u': 1, duration: .7, ease: 'power3.inOut' }, '-=.45')
+        .fromTo(em || [], { '--u': 0 }, { '--u': 1, duration: .7, ease: 'power3.inOut' }, '-=.45')
         .from('.home .lede', { autoAlpha: 0, y: 14 }, '-=.6')
         .from('.modes button', { autoAlpha: 0, y: 18, stagger: .06 }, '-=.45')
         .from('.home .panel, .home .composer, .home .modes ~ *', { autoAlpha: 0, y: 12, stagger: .05 }, '-=.35')
