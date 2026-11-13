@@ -18,7 +18,7 @@ src/js/*.js        código, um arquivo por área
 build.sh           junta tudo em muvi.html
 muvi.html          o app pronto (é o que está publicado no claude.ai)
 docs/              engenharia reversa (pacote replica): mapa, matriz de features, design
-docs/gsap.md       referência do GSAP (animações) para futuras atualizações
+docs/aprendizados.md índice de tudo que foi lido (GSAP, three.js...) — consultar antes de atualizar
 ```
 
 Ordem dos arquivos (definida no build.sh): core → render → story → places → toon → brands → objs → doc → audio → ai → media → export → uistory → uidoc → trends → novela → history → viral → ui.
