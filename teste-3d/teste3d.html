@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muvi teste 3D</title>
+<style>
+:root { --bg:#04070D; --surface:#0a1120; --border:#1a2436; --text:#F8FAFC; --muted:#A6B0C3; --grad:linear-gradient(90deg,#D44CFF,#6E52FF 45%,#00D2FF); color-scheme: dark; }
+* { box-sizing: border-box; } html, body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 Inter, system-ui, -apple-system, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; display:grid; gap:18px; }
+h1 { font: 800 clamp(26px,4vw,38px)/1.05 Sora, Inter, system-ui, sans-serif; letter-spacing:-.03em; margin:0; }
+p { color: var(--muted); margin: 0; max-width: 60ch; }
+.stage { display:grid; grid-template-columns: minmax(0,360px) 1fr; gap: 20px; align-items:start; }
+.frame { position:relative; aspect-ratio: 9/16; width:100%; border-radius:16px; overflow:hidden; background:#000; border:1px solid var(--border); }
+.frame canvas { width:100%; height:100%; display:block; }
+.load { position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); font-size:13px; text-align:center; padding:20px; }
+.side { display:grid; gap:12px; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip { height:36px; padding:0 14px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--muted); font:600 13px Inter, system-ui, sans-serif; cursor:pointer; }
+.chip[aria-pressed="true"] { background:var(--text); color:#0a0f1a; border-color:var(--text); }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+.card b { display:block; margin-bottom:4px; }
+.bar { height:4px; border-radius:4px; background:#141c2c; overflow:hidden; } .bar i { display:block; height:100%; width:0; background:var(--grad); }
+@media (max-width: 720px) { .stage { grid-template-columns: 1fr; } .frame { max-width: 380px; margin: 0 auto; } }
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.webgpu.js",
+  "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.webgpu.js",
+  "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.tsl.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"
+} }</script>
+</head><body>
+<main>
+  <div><h1>Teste 3D do Muvi</h1><p>Cenas 3D desenhadas quadro a quadro dentro do vídeo 9:16, com a legenda do Muvi por cima. É assim que entrariam na exportação.</p></div>
+  <div class="stage">
+    <div class="frame"><canvas id="out" width="540" height="960"></canvas><div class="load" id="load">Carregando o 3D…</div></div>
+    <div class="side">
+      <div class="chips" id="pick"><button class="chip" data-s="city" aria-pressed="true">🏙️ Abertura na cidade</button><button class="chip" data-s="prod" aria-pressed="false">📱 Objeto com brilho</button></div>
+      <div class="bar"><i id="prog"></i></div>
+      <div class="card" id="info"></div>
+      <div class="card"><b>Como entraria no Muvi</b><p>A IA escolhe uma cena 3D para o gancho (cidade, produto, dinheiro caindo), o Muvi desenha cada quadro no tempo exato do vídeo e coloca a legenda por cima. Exporta igual aos outros vídeos.</p></div>
+    </div>
+  </div>
+</main>
+<script type="module">
+import * as THREE from 'three/webgpu';
+import { pass } from 'three/tsl';
+import { bloom } from 'three/addons/tsl/display/BloomNode.js';
+import { SkyMesh } from 'three/addons/objects/SkyMesh.js';
+import { CityGenerator, createBuildingMaterial, createRoadMaterial } from 'three/addons/generators/CityGenerator.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const W = 540, H = 960, DUR = 6;
+const out = document.getElementById('out'), octx = out.getContext('2d');
+const renderer = new THREE.WebGPURenderer({ antialias: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.shadowMap.enabled = true;
+await renderer.init();
+const pmrem = new THREE.PMREMGenerator(renderer);
+const ease = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+
+/* ---------------- cena 1: abertura sobrevoando a cidade (hora dourada) ---------------- */
+const city = (() => {
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(50, W / H, 1, 20000);
+  const gen = new CityGenerator({ seed: 94 });
+  const fw = gen.layout.cityW + 2 * gen.layout.street, fd = gen.layout.cityD + 2 * gen.layout.street;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(fw, fd).rotateX(-Math.PI / 2), createRoadMaterial(gen.layout)); ground.receiveShadow = true; scene.add(ground);
+  const far = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000).rotateX(-Math.PI / 2), new THREE.MeshStandardNodeMaterial({ color: 0x3b3f45, roughness: .95 })); far.position.y = -.05; far.receiveShadow = true; scene.add(far);
+  scene.fog = new THREE.Fog(0xe9b98a, 300, 1100);
+  scene.add(gen.build({ building: createBuildingMaterial(gen.layout, gen.seedNode) }));
+  const sky = new SkyMesh(); sky.scale.setScalar(10000); sky.turbidity.value = 8; sky.rayleigh.value = 3; sky.mieCoefficient.value = .008; sky.mieDirectionalG.value = .88;
+  const sun = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 14), THREE.MathUtils.degToRad(140));
+  sky.sunPosition.value.copy(sun);
+  const env = new THREE.Scene(); sky.showSunDisc.value = false; env.add(sky); scene.environment = pmrem.fromScene(env, 0, .1, 100).texture; sky.showSunDisc.value = true; scene.add(sky);
+  scene.environmentIntensity = .35;
+  const light = new THREE.DirectionalLight(0xffb878, 60); light.position.copy(sun).multiplyScalar(600); light.castShadow = true;
+  light.shadow.mapSize.set(2048, 2048); light.shadow.normalBias = .05; const sc = light.shadow.camera; sc.left = sc.bottom = -260; sc.right = sc.top = 260; sc.near = 1; sc.far = 1500; scene.add(light);
+  scene.add(new THREE.HemisphereLight(0x9fc4ff, 0x3a2a20, 1.2));
+  const path = new THREE.CatmullRomCurve3([new THREE.Vector3(-120, 260, -170), new THREE.Vector3(-70, 150, -175), new THREE.Vector3(-30, 45, -150), new THREE.Vector3(0, 9, -118)]);
+  const look = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 10, 0), new THREE.Vector3(0, 18, 20), new THREE.Vector3(0, 12, 60)]);
+  const rp = new THREE.RenderPipeline(renderer); const sp = pass(scene, cam).getTextureNode(); const bl = bloom(sp, .08, .2, .6); bl.setResolutionScale(.5); rp.outputNode = sp.add(bl);
+  return { cap: ['ESSA CIDADE', 'ESCONDE UM', 'SEGREDO'], hl: 2, info: '<b>Abertura sobrevoando a cidade</b><p>Cidade gerada na hora pelo three.js (prédios, carros, táxis, pessoas, postes), hora dourada com sol, sombras e brilho. A câmera desce do alto até a rua: ótimo para gancho de história ou mistério.</p>',
+    render(t) { const k = ease(clamp(t / DUR, 0, 1)); cam.position.copy(path.getPointAt(k)); cam.lookAt(look.getPointAt(k)); renderer.toneMappingExposure = .55; rp.render(); } };
+})();
+
+/* ---------------- cena 2: objeto girando com brilho (celular + moedas) ---------------- */
+const prod = (() => {
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(32, W / H, .1, 100);
+  scene.background = new THREE.Color(0x05070d);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), .04).texture; scene.environmentIntensity = .55;
+  const scr = document.createElement('canvas'); scr.width = 512; scr.height = 1024; const g = scr.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, 1024); gr.addColorStop(0, '#120c2a'); gr.addColorStop(1, '#04121c'); g.fillStyle = gr; g.fillRect(0, 0, 512, 1024);
+  g.fillStyle = '#ffffff22'; g.fillRect(0, 0, 512, 70); g.fillStyle = '#fff'; g.font = '600 30px Inter, sans-serif'; g.fillText('9:41', 40, 48);
+  const card = (y, t1, t2, c) => { g.fillStyle = '#ffffff14'; g.beginPath(); g.roundRect(28, y, 456, 150, 26); g.fill(); g.fillStyle = c; g.beginPath(); g.arc(90, y + 75, 34, 0, 7); g.fill(); g.fillStyle = '#A6B0C3'; g.font = '500 26px Inter, sans-serif'; g.fillText(t1, 140, y + 62); g.fillStyle = '#fff'; g.font = '800 46px Inter, sans-serif'; g.fillText(t2, 140, y + 116); };
+  card(330, 'Pix recebido', 'R$ 12.400', '#3ddc97'); card(500, 'Pix recebido', 'R$ 8.950', '#3ddc97'); card(670, 'Venda aprovada', 'R$ 3.270', '#00D2FF');
+  const tex = new THREE.CanvasTexture(scr); tex.colorSpace = THREE.SRGBColorSpace;
+  const phone = new THREE.Group(); scene.add(phone);
+  const body = new THREE.Mesh(new RoundedBoxGeometry(1.5, 3.1, .16, 6, .2), new THREE.MeshPhysicalNodeMaterial({ color: 0x15151c, metalness: .9, roughness: .25, clearcoat: 1 })); phone.add(body);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.38, 2.96), new THREE.MeshBasicNodeMaterial({ map: tex })); screen.position.z = .082; phone.add(screen);
+  const N = 46, coinGeo = new THREE.CylinderGeometry(.16, .16, .035, 32), coinMat = new THREE.MeshPhysicalNodeMaterial({ color: 0xffc24a, metalness: 1, roughness: .22, emissive: 0x3a2200 });
+  const coins = new THREE.InstancedMesh(coinGeo, coinMat, N); scene.add(coins);
+  const rnd = (i, s) => { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); };
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), sv = new THREE.Vector3(1, 1, 1);
+  const rim1 = new THREE.PointLight(0xD44CFF, 30, 12); rim1.position.set(-2.5, 1.5, -1.5); const rim2 = new THREE.PointLight(0x00D2FF, 30, 12); rim2.position.set(2.5, -1, -1.2);
+  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(2, 3, 4); scene.add(rim1, rim2, key);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(2.1, 64), new THREE.MeshBasicNodeMaterial({ color: 0x6E52FF, transparent: true, opacity: .07 })); glow.position.z = -2.2; glow.visible = false; scene.add(glow);
+  const rp = new THREE.RenderPipeline(renderer); const sp = pass(scene, cam).getTextureNode(); const bl = bloom(sp, .55, .35, .55); rp.outputNode = sp.add(bl);
+  return { cap: ['ELE GANHOU', 'ISSO EM', '1 DIA?'], hl: 2, capY: .74, info: '<b>Objeto girando com brilho</b><p>Celular 3D com a tela desenhada pelo próprio Muvi (Pix recebido), moedas caindo com física e luzes nas cores da Moove com brilho (bloom). Serve para vídeos de dinheiro, produto, tecnologia.</p>',
+    render(t) {
+      const k = clamp(t / DUR, 0, 1), spin = ease(clamp(t / 2.2, 0, 1));
+      phone.rotation.set(.12 * Math.sin(t * .9), -Math.PI * 1.15 * (1 - spin) + .32 * Math.sin(t * .7), .05 * Math.sin(t * 1.3)); phone.position.y = .06 * Math.sin(t * 1.6);
+      cam.position.set(0, .2, 9.4 - 1.4 * ease(k)); cam.lookAt(0, 0, 0);
+      for (let i = 0; i < N; i++) { const t0 = .6 + rnd(i, 1) * 3.6, u = Math.max(0, t - t0), y = 4.3 - 2.4 * u * u - 1.2 * u;
+        p.set((rnd(i, 2) - .5) * 4.2, Math.max(y, -6), -1.2 + (rnd(i, 3) - .2) * 3.4); e.set(u * (4 + rnd(i, 4) * 6), u * 3, rnd(i, 5) * 6); q.setFromEuler(e); m.compose(p, q, sv); coins.setMatrixAt(i, m); }
+      coins.instanceMatrix.needsUpdate = true; renderer.toneMappingExposure = 1; rp.render();
+    } };
+})();
+
+/* ---------------- legenda do Muvi por cima (como no vídeo final) ---------------- */
+function caption(S, t) {
+  const words = S.cap, a = clamp((t - .4) / .5, 0, 1); if (!a) return;
+  octx.save(); octx.textAlign = 'center'; octx.lineJoin = 'round';
+  words.forEach((w, i) => { const ti = clamp((t - .4 - i * .35) / .3, 0, 1); if (!ti) return; const s = .7 + .3 * (1 - Math.pow(1 - ti, 3)) + (ti < 1 ? .08 * Math.sin(ti * Math.PI) : 0);
+    const y = H * (S.capY || .62) + i * 62; octx.save(); octx.translate(W / 2, y); octx.scale(s, s); octx.font = '900 54px Inter, system-ui, sans-serif';
+    octx.lineWidth = 12; octx.strokeStyle = 'rgba(0,0,0,.85)'; octx.strokeText(w, 0, 0); octx.fillStyle = i === S.hl ? '#ffd23f' : '#fff'; octx.fillText(w, 0, 0); octx.restore(); });
+  octx.restore();
+}
+const SC = { city, prod };
+let cur = 'city';
+window.renderAt = (id, t) => { const S = SC[id]; S.render(t); octx.drawImage(renderer.domElement, 0, 0, W, H); caption(S, t); };
+const info = document.getElementById('info'), prog = document.getElementById('prog');
+function pick(id) { cur = id; info.innerHTML = SC[id].info; document.querySelectorAll('#pick .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === id)); t0 = performance.now(); }
+document.getElementById('pick').onclick = e => { const b = e.target.closest('[data-s]'); if (b) pick(b.dataset.s); };
+let t0 = performance.now(); pick('city'); document.getElementById('load').remove();
+window.MANUAL = new URLSearchParams(location.search).has('manual');
+if (!window.MANUAL) renderer.setAnimationLoop(() => { const t = ((performance.now() - t0) / 1000) % (DUR + 1); renderAt(cur, Math.min(t, DUR)); prog.style.width = (Math.min(t, DUR) / DUR * 100) + '%'; });
+window.READY = true;
+</script>
+</body></html>
