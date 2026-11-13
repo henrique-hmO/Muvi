@@ -319,7 +319,7 @@ DRAW.story = (ctx, L, W, H, t, d, p) => {
   const chW = vertical ? H * .44 : H * .66, world = { pivot: gy, wpivot: H * .8, ground: H * .82, z: cam.z * ch / chW, cx: cam.x, ch: chW, skip: shot !== 'wide' };
   drawThings(ctx, W, H, p.things, t, d, 'back', world);
   ctx.save(); ctx.translate(W / 2, gy); ctx.scale(cam.z, cam.z); ctx.translate(-W / 2 - cam.x, -gy);
-  if (p.crowd && !near) { const r = seeded(5); for (let i = 0; i < 9; i++) { ctx.save(); ctx.translate(W * (r() * 1.1 - .05), gy - H * .01); drawPerson(ctx, castOf(P, 'friend'), { h: ch * (.62 + r() * .1), facing: r() > .5 ? 1 : -1, silhouette: true, pose: 'stand', phase: i }, t); ctx.restore(); } }
+  if (p.crowd && !near) { const r = seeded(5); for (let i = 0; i < 9; i++) { ctx.save(); ctx.translate(W * (r() * 1.1 - .05), gy - H * .01); drawPerson(ctx, isCine() ? crowdLook(i) : castOf(P, 'friend'), { h: ch * (.62 + r() * .1), facing: r() > .5 ? 1 : -1, silhouette: !isCine(), dim: isCine() ? .12 : 0, pose: 'stand', emotion: r() > .7 ? 'happy' : 'neutral', phase: i }, t); ctx.restore(); } }
   const extras = shot === 'close' ? [] : (p.extras || []).slice(0, shot === 'medium' ? 1 : 3);
   extras.forEach((e, i) => {
     const ex = Number.isFinite(+e.x) ? +e.x : (i % 2 ? .78 : .22);

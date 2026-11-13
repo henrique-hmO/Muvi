@@ -64,24 +64,24 @@ function drawCineBody(ctx, look, o, t) {
     if (look.top === 'tshirt') cap(-8.8, shY + 2.5, -8.8 + (ex + 8.8) * .42, shY + 2.5 + (ey - shY - 2.5) * .42, 6.4, sil(shade(top, -.18)));
     cineHand(ctx, hx, hy, -ha2, sil(shade(skin, -.14))); }
   /* neck */
-  ctx.fillStyle = sil(shade(skin, -.14)); ctx.fillRect(-2.6, shY - 6, 5.2, 7.5);
+  { const nw = look.g === 'f' ? 2.2 : 2.7; ctx.fillStyle = sil(shade(skin, -.08)); ctx.beginPath(); ctx.moveTo(-nw, shY - 8); ctx.lineTo(nw, shY - 8); ctx.lineTo(nw + .5, shY + 2.5); ctx.lineTo(-nw - .5, shY + 2.5); ctx.fill(); ctx.fillStyle = 'rgba(60,25,15,.28)'; ctx.beginPath(); ctx.ellipse(0, shY - 6.6, nw + .2, 1.4, 0, 0, Math.PI); ctx.fill(); }
   /* torso */
-  ctx.beginPath(); ctx.moveTo(-10.8, shY + 1.5); ctx.quadraticCurveTo(-11.8, shY + 12, -9, -57); ctx.quadraticCurveTo(-9.6, -53, -9.2, -52); ctx.lineTo(9.2, -52); ctx.quadraticCurveTo(9.6, -53, 9, -57); ctx.quadraticCurveTo(11.8, shY + 12, 10.8, shY + 1.5); ctx.quadraticCurveTo(6, shY - 1.6, 0, shY - 1.2); ctx.quadraticCurveTo(-6, shY - 1.6, -10.8, shY + 1.5); ctx.closePath();
+  ctx.beginPath(); ctx.moveTo(-10.8, shY + 1.5); ctx.quadraticCurveTo(-11.8, shY + 12, -9, -57); ctx.quadraticCurveTo(-9.6, -53, -9.2, -52); ctx.lineTo(9.2, -52); ctx.quadraticCurveTo(9.6, -53, 9, -57); ctx.quadraticCurveTo(11.8, shY + 12, 10.8, shY + 1.5); ctx.quadraticCurveTo(5, shY - .6, 3.4, shY - .2); ctx.quadraticCurveTo(0, shY + 2.4, -3.4, shY - .2); ctx.quadraticCurveTo(-5, shY - .6, -10.8, shY + 1.5); ctx.closePath();
   if (look.top === 'tank') { ctx.fillStyle = sil(skin); ctx.fill(); ctx.beginPath(); ctx.moveTo(-7, shY); ctx.quadraticCurveTo(-9.5, shY + 10, -9, -57); ctx.lineTo(-9.2, -52); ctx.lineTo(9.2, -52); ctx.lineTo(9, -57); ctx.quadraticCurveTo(9.5, shY + 10, 7, shY); ctx.quadraticCurveTo(0, shY + 7, -7, shY); ctx.closePath(); }
   ctx.fillStyle = sil(top); ctx.fill();
   ctx.save(); ctx.clip(); ctx.fillStyle = sil(shade(top, -.14)); ctx.fillRect(-12, shY - 2, 5, 32); ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(-12, -58, 24, 6); ctx.restore();
   const det = c => { ctx.strokeStyle = c; ctx.lineWidth = .6; };
   if (look.top === 'tshirt' || look.top === 'hoodie') { det('rgba(0,0,0,.25)'); ctx.beginPath(); ctx.moveTo(-3.2, shY - .9); ctx.quadraticCurveTo(0, shY + 2.6, 3.2, shY - .9); ctx.stroke(); }
   if (look.top === 'suit') { ctx.fillStyle = sil('#f2f2f2'); ctx.beginPath(); ctx.moveTo(-3.5, shY - 1); ctx.lineTo(0, shY + 11); ctx.lineTo(3.5, shY - 1); ctx.fill(); ctx.fillStyle = sil('#9e2a32'); ctx.beginPath(); ctx.moveTo(-1, shY); ctx.lineTo(1, shY); ctx.lineTo(1.5, shY + 9); ctx.lineTo(0, shY + 11); ctx.lineTo(-1.5, shY + 9); ctx.fill(); ctx.fillStyle = sil(shade(top, -.25)); ctx.beginPath(); ctx.moveTo(-3.5, shY - 1); ctx.lineTo(-6, shY + 6); ctx.lineTo(0, shY + 13); ctx.closePath(); ctx.moveTo(3.5, shY - 1); ctx.lineTo(6, shY + 6); ctx.lineTo(0, shY + 13); ctx.closePath(); ctx.fill(); }
-  if (look.top === 'hoodie') { ctx.fillStyle = sil(shade(top, -.12)); rrp(ctx, -6, -63, 12, 6, 2); ctx.fill(); ctx.fillStyle = sil(shade(top, -.2)); ctx.beginPath(); ctx.ellipse(0, shY - 1, 8, 3, 0, Math.PI, 0); ctx.fill(); det(sil('#e8e4dc')); ctx.beginPath(); ctx.moveTo(-1.6, shY + 1); ctx.lineTo(-1.6, shY + 9); ctx.moveTo(1.6, shY + 1); ctx.lineTo(1.6, shY + 8); ctx.stroke(); }
+  if (look.top === 'hoodie') { ctx.fillStyle = sil(shade(top, -.12)); rrp(ctx, -6, -63, 12, 6, 2); ctx.fill(); ctx.fillStyle = sil(shade(top, -.2)); ctx.beginPath(); ctx.ellipse(0, shY + 1.2, 6.2, 2.2, 0, Math.PI, 0); ctx.fill(); det(sil('#e8e4dc')); ctx.beginPath(); ctx.moveTo(-1.6, shY + 1); ctx.lineTo(-1.6, shY + 9); ctx.moveTo(1.6, shY + 1); ctx.lineTo(1.6, shY + 8); ctx.stroke(); }
   if (look.top === 'uniform') { det('rgba(0,0,0,.35)'); ctx.beginPath(); ctx.moveTo(0, shY); ctx.lineTo(0, -52); ctx.stroke(); ctx.fillStyle = sil('#d9b444'); ctx.beginPath(); ctx.moveTo(4.5, shY + 6); ctx.lineTo(8, shY + 6); ctx.lineTo(8.4, shY + 9.5); ctx.lineTo(6.2, shY + 11.5); ctx.lineTo(4.1, shY + 9.5); ctx.fill(); }
-  if (look.top === 'jacket') { ctx.fillStyle = sil('#ecebe6'); ctx.beginPath(); ctx.moveTo(-2.6, shY - .5); ctx.lineTo(2.6, shY - .5); ctx.lineTo(1.8, -52); ctx.lineTo(-1.8, -52); ctx.fill(); }
+  if (look.top === 'jacket') { ctx.fillStyle = sil('#ecebe6'); ctx.beginPath(); ctx.moveTo(-2.4, shY + 1.4); ctx.lineTo(2.4, shY + 1.4); ctx.lineTo(1.8, -52); ctx.lineTo(-1.8, -52); ctx.fill(); }
   if (look.shirtBrand && BRANDS[look.shirtBrand] && look.top !== 'suit') { ctx.save(); ctx.translate(-1, shY + 12); drawBrandBadge(ctx, look.shirtBrand, 0, 0, 4.6, { noText: look.top === 'uniform' }); ctx.restore(); }
   else if (look.print && ['tshirt', 'tank', 'hoodie'].includes(look.top)) { ctx.save(); ctx.fillStyle = sil(shade(top, top === '#ffffff' ? -.5 : .55)); ctx.font = `900 3.2px Poppins, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; String(look.print).toUpperCase().split(/\s*\/\s*|\n/).slice(0, 2).forEach((l, i) => ctx.fillText(l.slice(0, 10), -1, shY + 11 + i * 4, 15)); ctx.restore(); }
   if (look.accessory === 'chain') { ctx.strokeStyle = sil('#e0bf55'); ctx.lineWidth = .9; ctx.beginPath(); ctx.arc(0, shY - 1, 4.4, .35, Math.PI - .35); ctx.stroke(); }
   if (look.accessory === 'badge' && look.top !== 'uniform') { ctx.fillStyle = sil('#d9b444'); ell(5.5, shY + 7, 1.6, 1.6); ctx.fill(); }
   /* head */
-  ctx.save(); ctx.translate(0, shY - 4); ctx.rotate(A.head * .8); ctx.translate(.6, -6.4); ctx.scale(.034, .034);
+  ctx.save(); ctx.translate(0, shY - 4); ctx.rotate(A.head * .8); ctx.translate(.6, -7.0); ctx.scale(.034, .034);
   cineHead(ctx, look, emotion, ph, sil, skin, talking, silhouette);
   ctx.restore();
   /* front arm + prop */
@@ -102,10 +102,10 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
   const P = new Path2D(); P.moveTo(-150, -60); P.bezierCurveTo(-150, -235, 150, -235, 150, -60); P.bezierCurveTo(150, 60, f ? 108 : 122, 168, 0, 196); P.bezierCurveTo(f ? -108 : -122, 168, -150, 60, -150, -60);
   const fill = (c, path) => { ctx.fillStyle = c; ctx.fill(path); };
   /* back hair */
-  if (look.hair === 'long') { const hs = Math.sin(t * 2.4) * 8; ctx.fillStyle = hc; ctx.beginPath(); ctx.moveTo(-178, -40); ctx.bezierCurveTo(-190, -250, 190, -250, 178, -40); ctx.bezierCurveTo(192, 110, 205 + hs, 230, 190 + hs * 1.6, 330); ctx.lineTo(-190 + hs * 1.6, 330); ctx.bezierCurveTo(-205 + hs, 230, -192, 110, -178, -40); ctx.fill(); }
+  if (look.hair === 'long') { const hs = Math.sin(t * 2.4) * 8; ctx.fillStyle = hc; ctx.beginPath(); ctx.moveTo(-176, -30); ctx.bezierCurveTo(-190, -250, 190, -250, 176, -30); ctx.bezierCurveTo(186, 60, 178, 150, 160, 210 + hs); ctx.quadraticCurveTo(120, 190, 100, 160); ctx.lineTo(-110, 160); ctx.bezierCurveTo(-170, 230, -205 + hs, 300, -186 + hs * 1.4, 360); ctx.quadraticCurveTo(-215, 280, -200, 180); ctx.bezierCurveTo(-196, 90, -186, 20, -176, -30); ctx.fill(); }
   if (look.hair === 'bun') { ctx.fillStyle = hc; ctx.beginPath(); ctx.arc(20, -250, 70, 0, 7); ctx.fill(); }
   /* ears */
-  if (look.hair !== 'long') for (const s of [-1, 1]) { ctx.fillStyle = skd; ctx.beginPath(); ctx.ellipse(s * 148, -10, 26, 44, 0, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(80,35,25,.25)'; ctx.beginPath(); ctx.ellipse(s * 150, -8, 11, 24, 0, 0, 7); ctx.fill(); }
+  for (const s of (look.hair === 'long' ? [1] : [-1, 1])) { ctx.fillStyle = skd; ctx.beginPath(); ctx.ellipse(s * 148, -10, 26, 44, 0, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(80,35,25,.25)'; ctx.beginPath(); ctx.ellipse(s * 150, -8, 11, 24, 0, 0, 7); ctx.fill(); }
   fill(sk, P);
   if (silhouette) { if (look.hair && look.hair !== 'bald') { ctx.fillStyle = hc; ctx.beginPath(); ctx.ellipse(0, -150, 165, 100, 0, Math.PI, 0); ctx.fill(); } return; }
   ctx.save(); ctx.clip(P);
@@ -118,7 +118,7 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
   ctx.restore();
   /* expression parameters */
   const E = { neutral: [1, 0, 0, 'line'], happy: [.86, .25, 0, 'smile'], confident: [.78, .1, -.2, 'smirk'], worried: [1.05, .45, .9, 'frown'], sad: [.8, .1, 1, 'frown'], angry: [.8, -.35, -2.2, 'tight'], scared: [1.35, 1, .8, 'open'], shocked: [1.45, 1.4, .3, 'open'] }[emotion] || [1, 0, 0, 'line'];
-  const blink = (t % 3.6) < .1 || (t % 7.3) > 7.18 ? .06 : 1, op = E[0] * blink, raise = E[1] + (talking ? Math.max(0, Math.sin(t * 2.3)) * .3 : 0), inner = E[2], look2 = Math.sin(t * .6) * .3 + .4;
+  const blink = (t % 3.6) < .1 || (t % 7.3) > 7.18 ? .06 : 1, op = E[0] * blink * (1 + CINE_REACT * .22), raise = E[1] + CINE_REACT * .55 + (talking ? (CINE_AMP != null ? clamp(CINE_AMP * 1.4 - .5, 0, .4) : Math.max(0, Math.sin(t * 2.3)) * .3) : 0), inner = E[2], look2 = (seeded(Math.floor(t * .8) + 11)() - .5) * .6 + .4;
   /* brows */
   ctx.fillStyle = sil(shade(look.hairColor || '#2a1d16', -.1));
   for (const s of [-1, 1]) { ctx.save(); ctx.scale(s, 1); const yo = -raise * 14, yi = -raise * 16 - inner * 14; ctx.beginPath(); ctx.moveTo(118, -54 + yo); ctx.quadraticCurveTo(84, -86 + yo + yi * .3, 36, -70 + yi); ctx.lineTo(35, -59 + yi); ctx.quadraticCurveTo(82, -73 + yo + yi * .3, 116, -47 + yo); ctx.fill(); ctx.restore(); }
@@ -148,7 +148,8 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
   /* mouth */
   const lipU = f ? '#9c4c45' : '#8a4a40', lipL = f ? '#b2584f' : '#9c5a4c', my = 106;
   const openM = (w, hgt) => { ctx.fillStyle = '#2a0e0c'; ctx.beginPath(); ctx.ellipse(0, my + hgt * .45, w, Math.max(4, hgt * .55), 0, 0, 7); ctx.fill(); ctx.fillStyle = '#f0ebe5'; ctx.beginPath(); ctx.ellipse(0, my - hgt * .02, w * .7, Math.min(6, hgt * .18), 0, 0, Math.PI); ctx.fill(); ctx.strokeStyle = lipL; ctx.lineWidth = 7; ctx.beginPath(); ctx.ellipse(0, my + hgt * .45, w + 2, Math.max(5, hgt * .55) + 2, 0, 0, 7); ctx.stroke(); };
-  if (talking) { const k = Math.abs(Math.sin(t * 12)) * .7 + Math.abs(Math.sin(t * 6.7)) * .4; openM(20 + k * 6, 8 + k * 26); }
+  if (talking && CINE_AMP != null) { const k = Math.pow(CINE_AMP, .8), sh = Math.sin(t * 9.3); if (k < .07) { ctx.fillStyle = lipU; ctx.beginPath(); ctx.moveTo(-34, my); ctx.quadraticCurveTo(0, my - 7, 34, my); ctx.quadraticCurveTo(0, my + 9, -34, my); ctx.fill(); ctx.strokeStyle = '#5a2620'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-34, my); ctx.quadraticCurveTo(0, my + 3, 34, my); ctx.stroke(); } else openM(17 + k * 8 + sh * 4 * k, 6 + k * 36); }
+  else if (talking) { const k = Math.abs(Math.sin(t * 12)) * .7 + Math.abs(Math.sin(t * 6.7)) * .4; openM(20 + k * 6, 8 + k * 26); }
   else if (E[3] === 'open') openM(emotion === 'shocked' ? 24 : 19, emotion === 'shocked' ? 46 : 32);
   else if (E[3] === 'smile') { ctx.fillStyle = '#3a1210'; ctx.beginPath(); ctx.moveTo(-44, my - 6); ctx.quadraticCurveTo(0, my + 34, 44, my - 6); ctx.quadraticCurveTo(0, my + 4, -44, my - 6); ctx.fill(); ctx.fillStyle = '#f2ede7'; ctx.beginPath(); ctx.moveTo(-36, my - 3); ctx.quadraticCurveTo(0, my + 12, 36, my - 3); ctx.quadraticCurveTo(0, my + 4, -36, my - 3); ctx.fill(); ctx.strokeStyle = lipU; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-46, my - 8); ctx.quadraticCurveTo(0, my + 36, 46, my - 8); ctx.stroke(); }
   else {
@@ -161,7 +162,7 @@ function cineHead(ctx, look, emotion, t, sil, skin, talking, silhouette) {
   ctx.fillStyle = hc;
   const capTop = () => { ctx.beginPath(); ctx.moveTo(-172, 30); ctx.bezierCurveTo(-182, -175, -62, -248, 0, -240); ctx.bezierCurveTo(62, -248, 182, -175, 172, 30); ctx.bezierCurveTo(160, -50, 150, -120, 70, -160); ctx.quadraticCurveTo(30, -178, 3, -176); ctx.quadraticCurveTo(-30, -178, -70, -160); ctx.bezierCurveTo(-150, -120, -160, -50, -172, 30); ctx.fill(); };
   const shortTop = () => { ctx.beginPath(); ctx.moveTo(-154, -20); ctx.bezierCurveTo(-166, -190, -70, -250, 6, -246); ctx.bezierCurveTo(86, -246, 166, -192, 154, -20); ctx.lineTo(146, -20); ctx.quadraticCurveTo(144, -96, 118, -128); ctx.quadraticCurveTo(84, -150, 40, -146); ctx.quadraticCurveTo(0, -158, -30, -150); ctx.quadraticCurveTo(-90, -150, -122, -124); ctx.quadraticCurveTo(-146, -96, -146, -20); ctx.closePath(); ctx.fill(); ctx.save(); ctx.strokeStyle = 'rgba(255,240,230,.06)'; ctx.lineWidth = 6; for (let i = -4; i <= 4; i++) { ctx.beginPath(); ctx.moveTo(i * 26, -232); ctx.quadraticCurveTo(i * 30 + 10, -195, i * 34 + 4, -160); ctx.stroke(); } ctx.restore(); };
-  if (look.hair === 'long') { capTop(); ctx.beginPath(); ctx.moveTo(-150, -20); ctx.bezierCurveTo(-160, 120, -168, 220, -150, 320); ctx.lineTo(-195, 300); ctx.bezierCurveTo(-200, 200, -192, 80, -176, -30); ctx.fill(); ctx.beginPath(); ctx.moveTo(150, -20); ctx.bezierCurveTo(160, 120, 168, 220, 150, 320); ctx.lineTo(195, 300); ctx.bezierCurveTo(200, 200, 192, 80, 176, -30); ctx.fill(); }
+  if (look.hair === 'long') { capTop(); ctx.beginPath(); ctx.moveTo(-150, -40); ctx.bezierCurveTo(-162, 80, -170, 200, -150, 330); ctx.quadraticCurveTo(-178, 300, -196, 250); ctx.bezierCurveTo(-200, 160, -194, 40, -178, -40); ctx.fill(); ctx.beginPath(); ctx.moveTo(150, -60); ctx.quadraticCurveTo(168, -20, 170, 20); ctx.lineTo(178, -40); ctx.fill(); ctx.strokeStyle = 'rgba(255,240,230,.08)'; ctx.lineWidth = 6; for (const x of [-182, -168]) { ctx.beginPath(); ctx.moveTo(x, -20); ctx.quadraticCurveTo(x - 6, 140, x + 8, 300); ctx.stroke(); } }
   if (look.hair === 'bun') capTop();
   if (look.hair === 'short') shortTop();
   if (look.hair === 'buzz') { ctx.save(); ctx.globalAlpha *= .8; ctx.beginPath(); ctx.moveTo(-154, -50); ctx.bezierCurveTo(-160, -230, 160, -230, 154, -50); ctx.quadraticCurveTo(140, -140, 0, -160); ctx.quadraticCurveTo(-140, -140, -154, -50); ctx.fill(); ctx.restore(); }

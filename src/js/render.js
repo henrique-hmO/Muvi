@@ -605,6 +605,7 @@ function drawFrame(ctx, P, t, opts = {}) {
     const out = flat ? 1 : outro(loc.local, loc.dur);
     ctx.save(); ctx.globalAlpha = out; ctx.translate(0, (1 - out) * -Math.min(W, H) * .03);
     if (flat && loc.index > 0 && loc.local < .26) { const e = ease.out(clamp(loc.local / .26)), sty = loc.index % 4; if (sty === 1 || sty === 3) ctx.translate((1 - e) * W * .28 * (sty === 1 ? 1 : -1), 0); else if (sty === 2) { ctx.translate(W / 2, H / 2); ctx.scale(1 + (1 - e) * .18, 1 + (1 - e) * .18); ctx.rotate((1 - e) * .03); ctx.translate(-W / 2, -H / 2); } }
+    if (flat && typeof camFx === 'function') camFx(ctx, W, H, P, s, t, loc.local);
     const pz = typeof punchAt === 'function' ? punchAt(P, t) : 1; if (pz !== 1) { ctx.translate(W / 2, H * .45); ctx.scale(pz, pz); ctx.translate(-W / 2, -H * .45); }
     try { fn(ctx, L, W, H, loc.local, loc.dur, s.p || {}); } catch (e) { console.warn('scene draw', e); }
     ctx.restore();
