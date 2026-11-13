@@ -410,6 +410,12 @@ body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-in
 .btn.primary:disabled { animation: none; } .btn.primary:disabled::before { opacity: 0; }
 @keyframes moove-spin { to { --ang: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .btn.primary, .btn.primary::before { animation: none; } }
+/* ---------- GSAP: animações da interface ---------- */
+.home h1 em::after { transform: skewX(-12deg) scaleX(var(--u, 1)); transform-origin: left center; }
+.modes button { position: relative; }
+.gsap-on .modes button[aria-selected="true"] { background: var(--surface-2) !important; box-shadow: none !important; border-bottom-color: var(--border) !important; }
+.mode-ind { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--grad); border-radius: 2px; pointer-events: none; }
+
 </style>
 
 <header class="top">
