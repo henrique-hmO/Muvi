@@ -430,6 +430,40 @@ body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-in
 .trim-h:focus-visible { outline: 2px solid var(--ai); outline-offset: 3px; }
 .trim.ease .trim-sel, .trim.ease .trim-h { transition: left .35s ease, width .35s ease; }
 @media (max-width: 520px) { .trim-h { width: 18px; } }
+/* ---------- histórico: seleção em massa ---------- */
+.recent-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.recent-head #pqOpen { margin-left: 0 !important; }
+.hist-sel { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.hist-count { color: var(--muted); font-size: 12px; margin-right: 4px; }
+.btn.danger:not(.ghost) { background: #b3263a; border-color: #b3263a; color: #fff; }
+.btn.danger:disabled { opacity: .45; }
+.recent-list.selecting .recent-item { position: relative; padding-left: 44px; user-select: none; -webkit-user-select: none; }
+.recent-list.selecting .recent-tags .btn { display: none; }
+.recent-item .pick { position: absolute; left: 14px; top: 14px; width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border-input, #33405a); background: transparent; transition: background .15s, border-color .15s; }
+.recent-item.picked { border-color: #6E52FF; background: linear-gradient(180deg, rgba(110, 82, 255, .14), rgba(110, 82, 255, .04)), var(--surface); }
+.recent-item.picked .pick { background: var(--grad); border-color: transparent; }
+.recent-item.picked .pick::after { content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+/* ---------- selo holográfico Moove IA ---------- */
+.moove-badge-wrap { display: flex; justify-content: center; margin: 40px auto 8px; perspective: 700px; }
+.moove-badge { display: block; width: 260px; max-width: 100%; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.mb-card { --rx: 0deg; --ry: 0deg; --hr: 0deg; --mx: 50%; --my: 50%; position: relative; display: flex; align-items: center; gap: 12px; height: 58px; padding: 0 16px 0 10px; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(135deg, #121a2d, #0b1120 60%, #141030); border: 1px solid #263252; transform: rotateX(var(--rx)) rotateY(var(--ry)); transform-style: preserve-3d; transition: transform .25s ease-out, box-shadow .25s; box-shadow: 0 10px 30px -12px rgba(110, 82, 255, .45); }
+.moove-badge.hover .mb-card { transition: transform .08s linear, box-shadow .25s; box-shadow: 0 16px 40px -12px rgba(110, 82, 255, .7); }
+.mb-inner { position: absolute; inset: 4px; border-radius: 9px; border: 1px solid rgba(166, 176, 195, .18); pointer-events: none; }
+.mb-card img { height: 38px; width: auto; flex: none; position: relative; z-index: 1; }
+.mb-txt { display: grid; line-height: 1.1; position: relative; z-index: 1; }
+.mb-txt small { font: 700 9px/1 var(--f-sans); letter-spacing: .12em; color: #9aa6bd; }
+.mb-txt b { font: 800 20px/1.15 var(--f-sans, Inter); letter-spacing: -.02em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.mb-holo { position: absolute; inset: 0; mix-blend-mode: overlay; pointer-events: none; }
+.mb-holo i { position: absolute; left: -20%; top: -120%; width: 140%; height: 340%; opacity: .5; filter: blur(8px);
+  background: linear-gradient(90deg, transparent 40%, var(--c) 50%, transparent 60%); transform: rotate(calc(var(--hr) + var(--i) * 10deg)); animation: mb-holo 5s ease-in-out infinite; animation-delay: calc(var(--i) * -.4s); }
+.mb-holo i:nth-child(1) { --c: #D44CFF; } .mb-holo i:nth-child(2) { --c: #ff6ad5; } .mb-holo i:nth-child(3) { --c: #6E52FF; } .mb-holo i:nth-child(4) { --c: #356CFF; } .mb-holo i:nth-child(5) { --c: #00D2FF; } .mb-holo i:nth-child(6) { --c: #7cf5ff; } .mb-holo i:nth-child(7) { --c: #ffffff; }
+.mb-shine { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, .22), transparent 45%); opacity: 0; transition: opacity .2s; }
+.moove-badge.hover .mb-shine { opacity: 1; }
+@keyframes mb-holo { 0%, 100% { translate: -12% 0; } 50% { translate: 12% 0; } }
+.moove-badge:focus-visible { outline: 2px solid var(--ai); outline-offset: 4px; border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) { .mb-holo i { animation: none; } .mb-card { transition: none; } }
 </style>
 
 <header class="top">
