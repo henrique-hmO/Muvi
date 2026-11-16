@@ -9,5 +9,6 @@ Todo documento ou link que o Henrique mandar é lido, resumido aqui em `docs/` e
 | Dynamic Text Slider (componente React) | componentes/dynamic-text-slider.md | título "vídeo pronto." com alças de corte de timeline; técnica de revelação de texto com clip-path |
 | Mesh Gradient SVG (componente React) | componentes/shader-svg-mascote.md | mascote fantasminha atrás da logo; recorte de forma SVG no canvas com Path2D |
 | Award Badge (componente React) | componentes/award-badge.md | selo holográfico "Desenvolvido por Moove IA" no fim da home |
+| AI Loader (componente React) | componentes/ai-loader.md | orbe "Criando seu vídeo" na tela de montagem |
 | Estilo realista | ref-estilo-realista.md | referência do estilo cinemático dos personagens |
 | Recon (replica) | recon.md, recon-viral.md, features*.csv | mapa dos apps de referência e matriz de funções |
