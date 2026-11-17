@@ -157,8 +157,8 @@ async function startExplainer(useAI) {
     openProject(P, 'board');
   } catch (e) {
     if (e?.code === 'cancelled') { show('home'); return; }
-    step('write', 'err', aiErr(e)); live.hidden = true;
-    $('#procExtra').innerHTML = `<div class="choice"><strong>Não deu para gerar com o Claude.</strong><span class="muted">${esc(aiErr(e))}</span><div class="chips"><button class="btn primary" id="retryAi">Tentar de novo</button><button class="btn" id="goLocal">Montar sem IA</button><button class="btn ghost" id="goHome">Voltar</button></div></div>`;
+    step('write', 'err', aiErr(e)); live.hidden = true; console.warn('startExplainer', e);
+    $('#procExtra').innerHTML = `<div class="choice"><strong>Não deu para gerar com o Claude.</strong><span class="muted">${esc(aiErr(e))} <small>(código: ${esc(String(e?.code || e?.name || e?.message || 'desconhecido').slice(0, 60))})</small></span><div class="chips"><button class="btn primary" id="retryAi">Tentar de novo</button><button class="btn" id="goLocal">Montar sem IA</button><button class="btn ghost" id="goHome">Voltar</button></div></div>`;
     $('#retryAi').onclick = () => startExplainer(true); $('#goLocal').onclick = () => startExplainer(false); $('#goHome').onclick = () => show('home');
   }
 }

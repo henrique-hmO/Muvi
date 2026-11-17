@@ -167,12 +167,48 @@ ${POST_GUIDE}
 ${COMPACT}
 Responda somente com JSON neste formato:
 {"title":"título curto do vídeo","post":{...},"scenes":[{"kind":"hook","dur":3,"say":"...","note":"...","p":{...}}]}`;
-  const r = await ask(prompt, { signal, onText, cache: false });
+  const r = await askScenes(prompt, { signal, onText, cache: false }, n);
   const scenes = (r?.scenes || []).map(normalizeScene).filter(Boolean);
   if (!scenes.length) throw { code: 'invalid_json' };
   return { title: String(r.title || '').slice(0, 80), scenes, post: normPost(r.post) };
 }
 
+
+/* ---------- resposta cortada ou fora do formato: aproveita as cenas que já chegaram (não paga tudo de novo) ---------- */
+function jsonBlockAt(t, i) { /* returns end index of the object/array starting at i, or -1 if incomplete */
+  const open = t[i], close = open === '{' ? '}' : ']'; let d = 0, q = false, esc = false;
+  for (let k = i; k < t.length; k++) { const c = t[k];
+    if (q) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') q = false; continue; }
+    if (c === '"') q = true; else if (c === '{' || c === '[') d++; else if (c === '}' || c === ']') { d--; if (!d) return k; } }
+  return -1;
+}
+function salvageJSON(text) {
+  const t = String(text || ''); if (!t) return null; const out = {};
+  const str = key => { const m = t.match(new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"')); if (m) try { out[key] = JSON.parse('"' + m[1] + '"'); } catch (e) { } };
+  const block = key => { const m = new RegExp('"' + key + '"\\s*:\\s*([\\[{])').exec(t); if (!m) return; const i = m.index + m[0].length - 1, e = jsonBlockAt(t, i); if (e > 0) try { out[key] = JSON.parse(t.slice(i, e + 1)); } catch (er) { } };
+  str('title'); block('post'); block('cast');
+  const m = /"scenes"\s*:\s*\[/.exec(t); out.scenes = [];
+  if (m) { let i = m.index + m[0].length;
+    while (i < t.length) { while (i < t.length && /[\s,]/.test(t[i])) i++; if (t[i] !== '{') break; const e = jsonBlockAt(t, i); if (e < 0) break; try { out.scenes.push(JSON.parse(t.slice(i, e + 1))); } catch (er) { } i = e + 1; } }
+  return out;
+}
+async function askScenes(prompt, opts, expect) {
+  let buf = ''; const on = opts.onText;
+  try { return await ask(prompt, { ...opts, onText: x => { if (x?.text) buf = x.text; on?.(x); } }); }
+  catch (e) {
+    if (e?.code === 'cancelled' || opts.signal?.aborted) throw e;
+    const part = salvageJSON(buf); console.warn('askScenes falhou', e?.code || e, 'cenas aproveitadas:', part?.scenes?.length || 0);
+    if (!part || part.scenes.length < 3) throw e;
+    const have = part.scenes.length;
+    if (have < expect * .75) {
+      const last = part.scenes.slice(-2).map(x => x.say || x.p?.text || '').filter(Boolean).join(' / ');
+      try { const more = await ask(`${prompt}\n\nCONTINUAÇÃO: as primeiras ${have} cenas já foram escritas (a última diz: "${last}"). Escreva SÓ as cenas que faltam, cerca de ${Math.max(2, expect - have)}, continuando dali e fechando o vídeo com o final e a chamada. Responda só JSON minificado: {"scenes":[...]}`, { ...opts, onText: on, cache: false });
+        if (Array.isArray(more?.scenes)) part.scenes.push(...more.scenes); }
+      catch (e2) { if (e2?.code === 'cancelled') throw e2; }
+    }
+    part.salvaged = true; return part;
+  }
+}
 /* ---------- Narração com imagem (illustrated narrated story) ---------- */
 const STORY_GUIDE = `Cada cena é uma ilustração animada com um personagem. Formato de cada cena:
 {"say":"narração falada (1 a 2 frases curtas)","dur":segundos,"note":"intenção",
@@ -212,7 +248,7 @@ ${DOC_GUIDE}
 ${POST_GUIDE}
 ${COMPACT}
 Responda somente com JSON: {"title":"título curto e chamativo","post":{...},"cast":[...],"scenes":[...]}`;
-    const r = await ask(prompt, { signal, onText, cache: false });
+    const r = await askScenes(prompt, { signal, onText, cache: false }, Math.round(target / 3.6));
     const scenes = (r?.scenes || []).map(x => normalizeScene({ ...x, kind: ['doc', 'photo', 'obj'].includes(x?.kind) ? x.kind : 'story' })).filter(Boolean);
     if (!scenes.length) throw { code: 'invalid_json' };
     return { title: String(r.title || '').slice(0, 80), cast: normCast(r.cast), scenes, post: normPost(r.post) };
@@ -231,7 +267,7 @@ Responda somente com JSON: {"title":"título curto e chamativo","post":{...},"ca
   for (let i = 0; i < chapters.length; i++) {
     const ch = chapters[i]; onChapter?.(i, chapters.length, ch.title);
     const secs = clamp(Number(ch.seconds) || target / chapters.length, 20, 240);
-    const r = await ask(`${base}
+    const r = await askScenes(`${base}
 Título do vídeo: "${outline.title}". Elenco já definido (use estes ids): ${JSON.stringify(cast.map(c => ({ id: c.id, name: c.name })))}.
 Roteiro geral: ${chapters.map((c, j) => `${j + 1}. ${c.title}`).join(' / ')}.
 Escreva agora SÓ o capítulo ${i + 1} de ${chapters.length}: "${ch.title}". ${ch.label ? `Use "label":"${ch.label}" na primeira cena do capítulo.` : ''} O que acontece: ${ch.beats || ''}.
@@ -241,7 +277,7 @@ Duração do capítulo: cerca de ${Math.round(secs)} segundos (aproximadamente $
 ${STORY_GUIDE}
 ${DOC_GUIDE}
 ${COMPACT}
-Responda somente com JSON: {"summary":"uma frase sobre como o capítulo terminou","scenes":[...]}`, { signal, onText, cache: false });
+Responda somente com JSON: {"summary":"uma frase sobre como o capítulo terminou","scenes":[...]}`, { signal, onText, cache: false }, Math.round(secs / 3.6));
     const sc = (r?.scenes || []).map(x => normalizeScene({ ...x, kind: ['doc', 'photo', 'obj'].includes(x?.kind) ? x.kind : 'story' })).filter(Boolean);
     scenes.push(...sc); prevSummary = String(r?.summary || ch.title);
   }

@@ -494,6 +494,12 @@ body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-in
 .dot-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ai); border-top-color: transparent; animation: spin .8s linear infinite; }
 /* ---------- aviso de segundo plano ---------- */
 .keep-note { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+/* ---------- vozes: controles extras ---------- */
+.voice-extra { display: grid; gap: 10px; }
+.voice-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.voice-pron summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.voice-pron textarea { margin-top: 6px; font: 13px/1.4 var(--f-mono, monospace); }
+.dub-box .chips { gap: 8px; }
 </style>
 
 <header class="top">

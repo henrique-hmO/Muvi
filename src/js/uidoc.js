@@ -134,7 +134,7 @@ function openAiVoice() {
     const worker = async () => {
       while (queue.length && !failed && !ctl.signal.aborted) {
         const u = queue.shift();
-        try { u.buf = await ttsScene(mcp, u.text, u.voice, ctl.signal); done++; $('#avBar').style.width = `${(done / n * 100).toFixed(0)}%`; $('#avStage').textContent = `Gerando · ${done} de ${n}`; }
+        try { u.buf = await ttsScene(mcp, u.text, u.voice, ctl.signal, u, P); done++; $('#avBar').style.width = `${(done / n * 100).toFixed(0)}%`; $('#avStage').textContent = `Gerando · ${done} de ${n}`; }
         catch (e) { failed = e; }
       }
     };

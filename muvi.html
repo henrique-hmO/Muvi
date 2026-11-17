@@ -494,6 +494,12 @@ body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-in
 .dot-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ai); border-top-color: transparent; animation: spin .8s linear infinite; }
 /* ---------- aviso de segundo plano ---------- */
 .keep-note { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+/* ---------- vozes: controles extras ---------- */
+.voice-extra { display: grid; gap: 10px; }
+.voice-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.voice-pron summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.voice-pron textarea { margin-top: 6px; font: 13px/1.4 var(--f-mono, monospace); }
+.dub-box .chips { gap: 8px; }
 </style>
 
 <header class="top">
@@ -4709,12 +4715,48 @@ ${POST_GUIDE}
 ${COMPACT}
 Responda somente com JSON neste formato:
 {"title":"título curto do vídeo","post":{...},"scenes":[{"kind":"hook","dur":3,"say":"...","note":"...","p":{...}}]}`;
-  const r = await ask(prompt, { signal, onText, cache: false });
+  const r = await askScenes(prompt, { signal, onText, cache: false }, n);
   const scenes = (r?.scenes || []).map(normalizeScene).filter(Boolean);
   if (!scenes.length) throw { code: 'invalid_json' };
   return { title: String(r.title || '').slice(0, 80), scenes, post: normPost(r.post) };
 }
 
+
+/* ---------- resposta cortada ou fora do formato: aproveita as cenas que já chegaram (não paga tudo de novo) ---------- */
+function jsonBlockAt(t, i) { /* returns end index of the object/array starting at i, or -1 if incomplete */
+  const open = t[i], close = open === '{' ? '}' : ']'; let d = 0, q = false, esc = false;
+  for (let k = i; k < t.length; k++) { const c = t[k];
+    if (q) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') q = false; continue; }
+    if (c === '"') q = true; else if (c === '{' || c === '[') d++; else if (c === '}' || c === ']') { d--; if (!d) return k; } }
+  return -1;
+}
+function salvageJSON(text) {
+  const t = String(text || ''); if (!t) return null; const out = {};
+  const str = key => { const m = t.match(new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"')); if (m) try { out[key] = JSON.parse('"' + m[1] + '"'); } catch (e) { } };
+  const block = key => { const m = new RegExp('"' + key + '"\\s*:\\s*([\\[{])').exec(t); if (!m) return; const i = m.index + m[0].length - 1, e = jsonBlockAt(t, i); if (e > 0) try { out[key] = JSON.parse(t.slice(i, e + 1)); } catch (er) { } };
+  str('title'); block('post'); block('cast');
+  const m = /"scenes"\s*:\s*\[/.exec(t); out.scenes = [];
+  if (m) { let i = m.index + m[0].length;
+    while (i < t.length) { while (i < t.length && /[\s,]/.test(t[i])) i++; if (t[i] !== '{') break; const e = jsonBlockAt(t, i); if (e < 0) break; try { out.scenes.push(JSON.parse(t.slice(i, e + 1))); } catch (er) { } i = e + 1; } }
+  return out;
+}
+async function askScenes(prompt, opts, expect) {
+  let buf = ''; const on = opts.onText;
+  try { return await ask(prompt, { ...opts, onText: x => { if (x?.text) buf = x.text; on?.(x); } }); }
+  catch (e) {
+    if (e?.code === 'cancelled' || opts.signal?.aborted) throw e;
+    const part = salvageJSON(buf); console.warn('askScenes falhou', e?.code || e, 'cenas aproveitadas:', part?.scenes?.length || 0);
+    if (!part || part.scenes.length < 3) throw e;
+    const have = part.scenes.length;
+    if (have < expect * .75) {
+      const last = part.scenes.slice(-2).map(x => x.say || x.p?.text || '').filter(Boolean).join(' / ');
+      try { const more = await ask(`${prompt}\n\nCONTINUAÇÃO: as primeiras ${have} cenas já foram escritas (a última diz: "${last}"). Escreva SÓ as cenas que faltam, cerca de ${Math.max(2, expect - have)}, continuando dali e fechando o vídeo com o final e a chamada. Responda só JSON minificado: {"scenes":[...]}`, { ...opts, onText: on, cache: false });
+        if (Array.isArray(more?.scenes)) part.scenes.push(...more.scenes); }
+      catch (e2) { if (e2?.code === 'cancelled') throw e2; }
+    }
+    part.salvaged = true; return part;
+  }
+}
 /* ---------- Narração com imagem (illustrated narrated story) ---------- */
 const STORY_GUIDE = `Cada cena é uma ilustração animada com um personagem. Formato de cada cena:
 {"say":"narração falada (1 a 2 frases curtas)","dur":segundos,"note":"intenção",
@@ -4754,7 +4796,7 @@ ${DOC_GUIDE}
 ${POST_GUIDE}
 ${COMPACT}
 Responda somente com JSON: {"title":"título curto e chamativo","post":{...},"cast":[...],"scenes":[...]}`;
-    const r = await ask(prompt, { signal, onText, cache: false });
+    const r = await askScenes(prompt, { signal, onText, cache: false }, Math.round(target / 3.6));
     const scenes = (r?.scenes || []).map(x => normalizeScene({ ...x, kind: ['doc', 'photo', 'obj'].includes(x?.kind) ? x.kind : 'story' })).filter(Boolean);
     if (!scenes.length) throw { code: 'invalid_json' };
     return { title: String(r.title || '').slice(0, 80), cast: normCast(r.cast), scenes, post: normPost(r.post) };
@@ -4773,7 +4815,7 @@ Responda somente com JSON: {"title":"título curto e chamativo","post":{...},"ca
   for (let i = 0; i < chapters.length; i++) {
     const ch = chapters[i]; onChapter?.(i, chapters.length, ch.title);
     const secs = clamp(Number(ch.seconds) || target / chapters.length, 20, 240);
-    const r = await ask(`${base}
+    const r = await askScenes(`${base}
 Título do vídeo: "${outline.title}". Elenco já definido (use estes ids): ${JSON.stringify(cast.map(c => ({ id: c.id, name: c.name })))}.
 Roteiro geral: ${chapters.map((c, j) => `${j + 1}. ${c.title}`).join(' / ')}.
 Escreva agora SÓ o capítulo ${i + 1} de ${chapters.length}: "${ch.title}". ${ch.label ? `Use "label":"${ch.label}" na primeira cena do capítulo.` : ''} O que acontece: ${ch.beats || ''}.
@@ -4783,7 +4825,7 @@ Duração do capítulo: cerca de ${Math.round(secs)} segundos (aproximadamente $
 ${STORY_GUIDE}
 ${DOC_GUIDE}
 ${COMPACT}
-Responda somente com JSON: {"summary":"uma frase sobre como o capítulo terminou","scenes":[...]}`, { signal, onText, cache: false });
+Responda somente com JSON: {"summary":"uma frase sobre como o capítulo terminou","scenes":[...]}`, { signal, onText, cache: false }, Math.round(secs / 3.6));
     const sc = (r?.scenes || []).map(x => normalizeScene({ ...x, kind: ['doc', 'photo', 'obj'].includes(x?.kind) ? x.kind : 'story' })).filter(Boolean);
     scenes.push(...sc); prevSummary = String(r?.summary || ch.title);
   }
@@ -5917,7 +5959,7 @@ function openAiVoice() {
     const worker = async () => {
       while (queue.length && !failed && !ctl.signal.aborted) {
         const u = queue.shift();
-        try { u.buf = await ttsScene(mcp, u.text, u.voice, ctl.signal); done++; $('#avBar').style.width = `${(done / n * 100).toFixed(0)}%`; $('#avStage').textContent = `Gerando · ${done} de ${n}`; }
+        try { u.buf = await ttsScene(mcp, u.text, u.voice, ctl.signal, u, P); done++; $('#avBar').style.width = `${(done / n * 100).toFixed(0)}%`; $('#avStage').textContent = `Gerando · ${done} de ${n}`; }
         catch (e) { failed = e; }
       }
     };
@@ -6509,6 +6551,96 @@ function seriesBarHTML(P) {
   return `<div class="series-bar"><span class="label">Novela</span><strong>${esc(nv?.title || 'Novela')}</strong><span class="pill">Episódio ${P.series.n}${P.series.n < latest ? ' · já lançado' : ''}</span><span class="muted" style="font-size:12px">Salvo automaticamente</span><button class="btn sm primary" type="button" data-act="nextEp">+ Episódio ${latest + 1}</button></div>`;
 }
 
+/* ---- voice.js ---- */
+/* ============ Vozes mais naturais: emoção por cena (sem gastar IA), velocidade, pronúncia, prévia e vozes brasileiras novas ============ */
+/* vozes que entendem instruções de estilo (emoção) */
+const EMO_PROV = ['google-tts', 'openai-tts'];
+TTS_VOICES.forEach(v => { const pr = v.body?.constraints?.allowedProviders?.tts?.[0] || ''; v.emo = EMO_PROV.some(p => pr.startsWith(p)); });
+/* narradores virais (passo 1) e vozes brasileiras nativas (passo 2) */
+TTS_VOICES.unshift(
+  { id: 'viral-m', g: 'n', emo: true, label: 'Narrador viral · masculino, emoção por cena (Google)', body: spk('google-tts', 'Puck') },
+  { id: 'viral-f', g: 'n', emo: true, label: 'Narradora viral · feminina, emoção por cena (Google)', body: spk('google-tts', 'Kore') },
+);
+TTS_VOICES.push(
+  { id: 'bruno', g: 'm', label: 'Bruno · masculina brasileira confiável (Cartesia)', body: spk('cartesia:sonic-3.5', 'b603811e-54c2-4a0a-8854-09eab9ffa63f') },
+  { id: 'diogo', g: 'm', label: 'Diogo · masculina brasileira animada (Cartesia)', body: spk('cartesia:sonic-3.5', 'fbee0e7d-a83a-4082-bad1-13c70f86da4e') },
+  { id: 'anapaula', g: 'f', label: 'Ana Paula · feminina brasileira vendedora (Cartesia)', body: spk('cartesia:sonic-3.5', '1cf751f6-8749-43ab-98bd-230dd633abdb') },
+  { id: 'alice', g: 'f', label: 'Alice · feminina brasileira explicativa (Cartesia)', body: spk('cartesia:sonic-3.5', '9904416a-0831-44ea-b8ee-5f145e8f9bbf') },
+);
+{ const el = TTS_VOICES.find(v => v.id === 'eleven'); if (el) el.label = 'ElevenLabs · precisa de saldo no Speko'; }
+
+/* ---------- emoção: sai das próprias cenas (clima, emoção do personagem, posição no vídeo) — custo zero de IA ---------- */
+const MOOD_TONE = { tense: 'tenso e urgente, voz firme', danger: 'alerta máximo, urgente, um pouco mais rápido', mystery: 'misterioso, voz mais baixa, quase sussurrando, suspense', flashback: 'nostálgico, mais lento e reflexivo', hope: 'esperançoso e caloroso' };
+const EMO_TONE = { happy: 'animado, sorrindo na voz', confident: 'confiante e firme', worried: 'preocupado', sad: 'triste, mais lento e suave', angry: 'indignado e enérgico', scared: 'com medo, tenso', shocked: 'surpreso e chocado, ênfase forte', neutral: '' };
+const VOICE_BASE = 'Fale em português do Brasil com sotaque brasileiro natural (nunca de Portugal). Estilo de narrador de vídeo viral do TikTok: envolvente, ritmo ágil, pausas curtas e naturais, dê ênfase às palavras mais importantes.';
+function voiceStyle(P, u) {
+  const s = P.scenes[u.i] || {}, p = s.p || {}, last = u.i === P.scenes.length - 1;
+  const line = u.j >= 0 ? p.lines?.[u.j] : null;
+  const emo = line?.emotion || p.hero?.emotion || '', mood = p.mood || 'normal';
+  const parts = [VOICE_BASE];
+  if (u.i === 0) parts.push('Esta é a frase de GANCHO: comece com energia e impacto máximos, como quem revela algo chocante.');
+  if (MOOD_TONE[mood]) parts.push('Tom: ' + MOOD_TONE[mood] + '.'); else if (EMO_TONE[emo]) parts.push('Tom: ' + EMO_TONE[emo] + '.');
+  if (last && u.i > 0) parts.push('É o fechamento: termine com convite direto e caloroso para seguir e comentar.');
+  const em = [...String(s.say || line?.text || '').matchAll(/\*([^*]{2,40})\*/g)].map(m => m[1]); if (em.length) parts.push('Ênfase forte em: ' + em.join(', ') + '.');
+  if (u.who && u.who !== 'narrator') parts.push('Você é um personagem falando numa cena, de forma natural e conversada.');
+  return parts.join(' ');
+}
+/* ---------- pronúncia: dicionário do usuário, só no texto enviado à voz (a legenda continua igual) ---------- */
+const PRON_KEY = 'muvi_pron';
+const PRON_DEFAULT = 'IA = i-á\nMoove = Múve\nMuvi = Múvi\nTikTok = tiquetóque\nCEO = cí-i-ôu\nPIX = pix';
+function pronList() { let t = PRON_DEFAULT; try { t = localStorage.getItem(PRON_KEY) ?? PRON_DEFAULT; } catch (e) { } return t.split('\n').map(l => l.split('=').map(x => x.trim())).filter(([a, b]) => a && b); }
+function applyPron(text) { let t = text; for (const [a, b] of pronList()) t = t.replace(new RegExp(`(^|[^\\p{L}\\p{N}])${a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^\\p{L}\\p{N}])`, 'gu'), `$1${b}`); return t; }
+
+/* ---------- síntese com estilo ---------- */
+ttsScene = async function (mcp, text, voice, signal, u, P) {
+  P ||= S.project; const speed = clamp(+(P?.voice?.speed || 1.06), .8, 1.3), emo = voice.emo && P?.voice?.emo !== false;
+  const instr = emo && u ? voiceStyle(P, u) : '';
+  const say = applyPron(text);
+  const key = [voice.id, speed, instr, say].join('|'); if (TTS_CACHE.has(key)) return TTS_CACHE.get(key);
+  const body = { text: say, intent: { language: 'pt-BR', optimizeFor: 'accuracy' }, spokenForm: true, ...voice.body };
+  if (speed !== 1) body.speed = speed; if (instr) body.instructions = instr;
+  let r;
+  try { r = await mcp.callTool('Speko', 'audio.synthesize', { body }, { signal }); }
+  catch (e) { if (e?.code === 'cancelled' || signal?.aborted) throw e; const m = String(e?.message || e); if (/402|top-up|top up/i.test(m)) throw { code: 'needs_topup', message: 'Essa voz (ElevenLabs) precisa de saldo no Speko. Escolha outra voz ou adicione crédito no Speko.' }; throw e; }
+  let pl = r?.payload; if (!pl && r?.content?.[0]?.text) { try { pl = JSON.parse(r.content[0].text); } catch (e) { } }
+  if (!pl?.audio_base64) { const m = JSON.stringify(r || '').slice(0, 300); if (/402|top-up/i.test(m)) throw { code: 'needs_topup', message: 'Essa voz (ElevenLabs) precisa de saldo no Speko. Escolha outra voz.' }; throw { code: 'no_audio', message: 'O conector não devolveu o áudio desta cena (texto longo demais?). Divida a narração em frases menores.' }; }
+  const buf = await audioCtx().decodeAudioData(b64ToBuf(pl.audio_base64));
+  TTS_CACHE.set(key, buf); return buf;
+};
+
+/* ---------- controles na janela de narração ---------- */
+const PREVIEW_TXT = 'Você não vai acreditar no que o seu cérebro faz quando sente perigo.';
+const PREVIEW_CACHE = new Map();
+openAiVoice = (f => function (...a) {
+  const P = S.project; if (P) { P.voice ||= {}; if (!P.voice.ai) P.voice.ai = 'viral-m'; P.voice.speed ??= 1.06; P.voice.emo ??= true; }
+  f.apply(this, a);
+  const box = document.getElementById('avV')?.closest('.field'); if (!box || !P) return;
+  const extra = document.createElement('div'); extra.className = 'voice-extra';
+  const sp = [[1, 'Normal'], [1.06, 'Viral'], [1.12, 'Rápida']];
+  extra.innerHTML = `<div class="voice-row"><button type="button" class="btn sm" id="avPrev">▶ Ouvir esta voz</button><small class="muted" id="avPrevMsg"></small></div>
+    <div class="field"><span>Velocidade</span><div class="chips" id="avSpeed">${sp.map(([v, l]) => `<button type="button" class="chip" data-v="${v}" aria-pressed="${Math.abs(P.voice.speed - v) < .001}">${l}</button>`).join('')}</div></div>
+    <label class="toggle" style="justify-content:flex-start;gap:10px"><input type="checkbox" id="avEmo" ${P.voice.emo !== false ? 'checked' : ''}><span>Emoção automática por cena <small class="muted">(gancho forte, suspense, alerta… sem gastar IA; vale nas vozes marcadas com ✦)</small></span></label>
+    <details class="voice-pron"><summary>Pronúncia (como a voz deve falar certas palavras)</summary><textarea class="input" id="avPron" rows="4" placeholder="palavra = como falar">${esc(pronList().map(([a, b]) => `${a} = ${b}`).join('\n'))}</textarea><small class="muted">Uma por linha. Só muda a voz; a legenda continua com a palavra original.</small></details>
+    <label class="toggle" style="justify-content:flex-start;gap:10px"><input type="checkbox" id="avRedo"><span>Refazer todas as falas <small class="muted">(cobra de novo; use só se mudou voz, velocidade ou emoção)</small></span></label>`;
+  box.after(extra);
+  /* marca as vozes com emoção */
+  document.querySelectorAll('#avV button').forEach(b => { const v = TTS_VOICES.find(x => x.id === b.dataset.v); if (v?.emo && !b.textContent.includes('✦')) b.textContent += ' ✦'; });
+  extra.querySelector('#avSpeed').onclick = e => { const b = e.target.closest('button'); if (!b) return; P.voice.speed = +b.dataset.v; extra.querySelectorAll('#avSpeed button').forEach(x => x.setAttribute('aria-pressed', x === b)); };
+  extra.querySelector('#avEmo').onchange = e => { P.voice.emo = e.target.checked; };
+  extra.querySelector('#avPron').onchange = e => { try { localStorage.setItem(PRON_KEY, e.target.value); } catch (er) { } };
+  extra.querySelector('#avRedo').onchange = e => { if (e.target.checked && P.narration) P.narration.units = []; };
+  extra.querySelector('#avPrev').onclick = async () => {
+    const vid = document.querySelector('#avV [aria-pressed="true"]')?.dataset.v || P.voice.ai, v = TTS_VOICES.find(x => x.id === vid), msg = extra.querySelector('#avPrevMsg');
+    if (!v) return; const key = vid + '|' + P.voice.speed + '|' + (P.voice.emo !== false);
+    try {
+      let buf = PREVIEW_CACHE.get(key);
+      if (!buf) { msg.textContent = 'Gerando amostra… (custa centavos)'; const mcp = await window.claude?.use?.('mcp'); if (!mcp) throw new Error('conectores indisponíveis aqui');
+        buf = await ttsScene(mcp, PREVIEW_TXT, v, null, { i: 0, j: -1, who: 'narrator' }, { ...P, scenes: [{ say: PREVIEW_TXT, p: { mood: 'mystery' } }] }); PREVIEW_CACHE.set(key, buf); }
+      const ac = audioCtx(); await ac.resume?.(); const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination); src.start(); msg.textContent = 'Tocando: ' + v.label.split(' (')[0];
+    } catch (e) { msg.textContent = e?.message || 'Não deu para gerar a amostra.'; }
+  };
+})(openAiVoice);
+
 /* ---- history.js ---- */
 /* ============ HISTORY: every video saved to the person's account, AI voice kept so it is never paid twice ============ */
 const HIST = { list: [], loaded: false, busy: new Set() };
@@ -7022,8 +7154,8 @@ async function startExplainer(useAI) {
     openProject(P, 'board');
   } catch (e) {
     if (e?.code === 'cancelled') { show('home'); return; }
-    step('write', 'err', aiErr(e)); live.hidden = true;
-    $('#procExtra').innerHTML = `<div class="choice"><strong>Não deu para gerar com o Claude.</strong><span class="muted">${esc(aiErr(e))}</span><div class="chips"><button class="btn primary" id="retryAi">Tentar de novo</button><button class="btn" id="goLocal">Montar sem IA</button><button class="btn ghost" id="goHome">Voltar</button></div></div>`;
+    step('write', 'err', aiErr(e)); live.hidden = true; console.warn('startExplainer', e);
+    $('#procExtra').innerHTML = `<div class="choice"><strong>Não deu para gerar com o Claude.</strong><span class="muted">${esc(aiErr(e))} <small>(código: ${esc(String(e?.code || e?.name || e?.message || 'desconhecido').slice(0, 60))})</small></span><div class="chips"><button class="btn primary" id="retryAi">Tentar de novo</button><button class="btn" id="goLocal">Montar sem IA</button><button class="btn ghost" id="goHome">Voltar</button></div></div>`;
     $('#retryAi').onclick = () => startExplainer(true); $('#goLocal').onclick = () => startExplainer(false); $('#goHome').onclick = () => show('home');
   }
 }
@@ -8143,6 +8275,79 @@ const KEEP_NOTE = 'Pode sair rapidinho: o Muvi salva tudo, pausa e continua sozi
 function keepNote(where) { if (!where || where.querySelector('.keep-note')) return; const p = document.createElement('p'); p.className = 'keep-note'; p.textContent = KEEP_NOTE; where.append(p); }
 openExport = (f => function (...a) { const r = f.apply(this, a); keepNote(document.querySelector('#exProg')?.parentElement); return r; })(openExport);
 pipeline = (f => function (...a) { const r = f.apply(this, a); keepNote(document.querySelector('#v-process .process')); return r; })(pipeline);
+
+/* ---- dub.js ---- */
+/* ============ Dublagem: cria a versão do mesmo vídeo em inglês ou espanhol (traduz textos + voz no novo idioma) ============ */
+const LANGS = {
+  'pt': { name: 'português', tts: 'pt-BR', flag: '🇧🇷' },
+  'en': { name: 'inglês', tts: 'en-US', flag: '🇺🇸', prompt: 'inglês dos EUA', base: 'Speak in natural, native American English. Viral TikTok narrator style: engaging, fast pace, short natural pauses, stress the key words.' },
+  'es': { name: 'espanhol', tts: 'es-MX', flag: '🇲🇽', prompt: 'espanhol latino-americano neutro', base: 'Habla en español latinoamericano neutro y natural. Estilo de narrador viral de TikTok: atrapante, ritmo ágil, pausas cortas y naturales, enfatiza las palabras clave.' },
+};
+/* campos de texto que aparecem/são falados; o resto (lugar, pose, cores…) não muda */
+const DUB_KEYS = ['say', 'text', 'title', 'sub', 'kicker', 'label', 'note', 'leftLabel', 'rightLabel', 'verdict', 'quote', 'term', 'unit', 'money', 'caption', 'suffix', 'prefix'];
+const DUB_LISTS = ['items', 'left', 'right', 'steps'];
+function dubCollect(P) {
+  const out = []; const add = (get, set) => { const v = get(); if (typeof v === 'string' && /\p{L}/u.test(v) && v.trim().length > 1) out.push({ v, set }); };
+  P.scenes.forEach(s => {
+    add(() => s.say, x => (s.say = x));
+    const p = s.p; if (!p || typeof p !== 'object') return;
+    for (const k of DUB_KEYS) if (k !== 'say') add(() => p[k], x => (p[k] = x));
+    for (const k of DUB_LISTS) if (Array.isArray(p[k])) p[k].forEach((_, i) => add(() => p[k][i], x => (p[k][i] = x)));
+    for (const [k, f] of [['lines', 'text'], ['messages', 'text'], ['bars', 'label']]) if (Array.isArray(p[k])) p[k].forEach(o => o && add(() => o[f], x => (o[f] = x)));
+  });
+  return out;
+}
+async function makeDub(P, lang) {
+  const L = LANGS[lang]; const Q = JSON.parse(snapshot(P));
+  Q.id = uid(); Q.lang = lang; Q.title = `${P.title} (${lang.toUpperCase()})`; Q.narration = null; Q.source = null;
+  Q.music = { ...(Q.music || {}), buffer: null }; if (Q.music.kind === 'upload') Q.music.kind = 'pulse';
+  Q.voice = { ...(Q.voice || {}), ai: 'viral-m' }; delete Q.series;
+  const items = dubCollect(Q);
+  const post = Q.post ? { titles: Q.post.titles || [], cover: Q.post.cover || '', caption: Q.post.caption || '', comment: Q.post.comment || '' } : null;
+  const r = await ask(`Traduza para ${L.prompt} os textos de um vídeo viral curto. Adapte como um criador nativo falaria: mantenha o gancho forte, o ritmo, as gírias equivalentes e o mesmo tamanho aproximado (a voz e as cenas já estão cronometradas). Mantenha os marcadores *assim* em volta das mesmas palavras de destaque. Números e fatos continuam iguais; valores em R$ ficam em R$.
+Textos (JSON, na ordem): ${JSON.stringify(items.map(x => x.v))}
+${post ? `Pacote de publicação: ${JSON.stringify(post)}` : ''}
+Responda só JSON minificado: {"t":[string na mesma ordem e quantidade]${post ? ',"post":{"titles":[...],"cover":"","caption":"","comment":"","hashtags":[4 hashtags do assunto no idioma, sem #]}' : ''}}`, { effort: 'low', cache: false });
+  const t = Array.isArray(r?.t) ? r.t : [];
+  if (t.length < items.length * .9) throw { code: 'invalid_json' };
+  items.forEach((x, i) => { if (typeof t[i] === 'string' && t[i].trim()) x.set(t[i]); });
+  if (post && r.post) Q.post = { ...Q.post, ...normPost({ ...Q.post, ...r.post }) };
+  return Q;
+}
+/* voz no idioma da versão */
+ttsScene = (f => async function (mcp, text, voice, signal, u, P) {
+  P ||= S.project; const L = LANGS[P?.lang];
+  if (!L || P.lang === 'pt') return f(mcp, text, voice, signal, u, P);
+  const speed = clamp(+(P.voice?.speed || 1.06), .8, 1.3), instr = voice.emo && P.voice?.emo !== false ? L.base : '';
+  const key = [voice.id, P.lang, speed, instr, text].join('|'); if (TTS_CACHE.has(key)) return TTS_CACHE.get(key);
+  const body = { text, intent: { language: L.tts, optimizeFor: 'accuracy' }, spokenForm: true, ...voice.body, speed };
+  if (instr) body.instructions = instr;
+  const r = await mcp.callTool('Speko', 'audio.synthesize', { body }, { signal });
+  let pl = r?.payload; if (!pl && r?.content?.[0]?.text) { try { pl = JSON.parse(r.content[0].text); } catch (e) { } }
+  if (!pl?.audio_base64) throw { code: 'no_audio', message: 'O conector não devolveu o áudio desta cena.' };
+  const buf = await audioCtx().decodeAudioData(b64ToBuf(pl.audio_base64)); TTS_CACHE.set(key, buf); return buf;
+})(ttsScene);
+
+/* ---------- botões na aba Publicar ---------- */
+function dubBlockHTML(P) {
+  if (P.mode === 'footage' || (P.lang && P.lang !== 'pt')) return '';
+  return `<div class="post-block dub-box"><b>🌎 Versão em outro idioma</b><p class="muted" style="margin:2px 0 8px;font-size:12.5px">Cria uma cópia deste vídeo traduzida, com legenda e voz no novo idioma, para postar em perfis gringos. Custa 1 pedido leve de IA; depois é só gerar a narração.</p>
+    <div class="chips"><button type="button" class="btn sm" data-post="dub-en">${LANGS.en.flag} Inglês</button><button type="button" class="btn sm" data-post="dub-es">${LANGS.es.flag} Espanhol</button></div></div>`;
+}
+postHTML = (f => function (P) { return f(P) + dubBlockHTML(P); })(postHTML);
+onPostClick = (f => async function (e) {
+  const b = e.target.closest('[data-post]'); const a = b?.dataset.post;
+  if (!a || !a.startsWith('dub-')) return f(e);
+  const P = S.project, lang = a.slice(4); if (!P || b.disabled) return;
+  if (!aiAvailable()) return toast('A IA não está disponível agora para traduzir.');
+  const old = b.textContent; b.disabled = true; b.textContent = 'Traduzindo…';
+  try {
+    saveDraft(); const Q = await makeDub(P, lang);
+    openProject(Q, 'board'); saveDraft();
+    toast(`Versão em ${LANGS[lang].name} criada. Gere a narração (Áudio → Narração com IA) para ouvir no novo idioma.`);
+  } catch (err) { console.warn(err); toast('Não deu para traduzir: ' + (err?.code ? aiErr(err) : err?.message || 'erro')); }
+  finally { b.disabled = false; b.textContent = old; }
+})(onPostClick);
 
 /* ---- trim.js ---- */
 /* ============ Título com "corte": "vídeo pronto." dentro de um trecho da timeline com alças arrastáveis ============ */
