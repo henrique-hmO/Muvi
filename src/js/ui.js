@@ -825,8 +825,10 @@ function openExport() {
   const ready = () => {
     $('#exProg').hidden = false; $('#exBar').style.width = '100%';
     $('#exStage').textContent = `Pronto · ${(blob.size / 1048576).toFixed(1)} MB${P.post ? ' · a legenda com as 5 hashtags vai copiada junto' : ''}`;
-    $('#exGo').textContent = shareOK ? '📲 Enviar (TikTok, Instagram, Fotos…)' : 'Salvar MP4'; $('#exGo').classList.add('primary');
-    if (shareOK && !$('#exSave')) { const b = document.createElement('button'); b.className = 'btn ghost'; b.id = 'exSave'; b.textContent = 'Só salvar o arquivo'; $('#exGo').before(b); b.onclick = async () => { if (await saveFile(`${slug(P.title)}.mp4`, blob) === 'saved') toast('Vídeo salvo'); }; }
+    $('#exGo').textContent = shareOK ? '📲 Enviar (TikTok, Instagram, Fotos…)' : '📲 Salvar e copiar legenda'; $('#exGo').classList.add('primary');
+    const add = (id, txt, fn) => { if ($('#' + id)) return; const b = document.createElement('button'); b.className = 'btn ghost'; b.id = id; b.textContent = txt; $('#exGo').before(b); b.onclick = fn; };
+    if (P.post) add('exCap', '📋 Copiar legenda', () => { copySync(postCaption(P)); toast('Legenda e hashtags copiadas. No TikTok é só colar.'); });
+    if (shareOK) add('exSave', 'Só salvar o arquivo', async () => { if (await saveFile(`${slug(P.title)}.mp4`, blob) === 'saved') toast('Vídeo salvo'); });
   };
   if (blob) ready();
   $('#exGo').onclick = async () => {
@@ -838,7 +840,7 @@ function openExport() {
     try {
       blob = await exportMP4(P, { quality, speed, signal: ctl.signal, onProgress: ({ stage, k, eta }) => { $('#exBar').style.width = `${(k * 100).toFixed(1)}%`; $('#exStage').textContent = `${stage} · ${Math.round(k * 100)}%${eta ? ` · faltam ~${fmtDur(eta)}` : ''}`; } });
       ready();
-      if (!shareOK) { copySync(postCaption(P)); const r = await saveFile(`${slug(P.title)}.mp4`, blob); if (r === 'saved') toast(P.post ? 'Vídeo salvo. Legenda e hashtags copiadas.' : 'Vídeo salvo'); }
+      if (!shareOK) { const r = await saveFile(`${slug(P.title)}.mp4`, blob); if (r === 'saved') toast(P.post ? 'Vídeo salvo. Toque em Copiar legenda e cole no TikTok.' : 'Vídeo salvo'); }
       else toast('Vídeo pronto. Toque em Enviar e escolha o TikTok.');
     } catch (e) {
       $('#exGo').textContent = 'Exportar MP4'; $('#exGo').classList.add('primary'); $('#exProg').hidden = e?.code === 'cancelled';
