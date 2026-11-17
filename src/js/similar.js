@@ -107,3 +107,11 @@ document.addEventListener('click', e => {
 }, true);
 const _renderHistorySim = renderHistory;
 renderHistory = function () { _renderHistorySim(); simButtons(); };
+/* o histórico da nuvem chega depois que o app abre e é desenhado pela função original (sem os extras);
+   observar a lista garante que "Mais assim", seleção e "Exportar vários" apareçam sempre */
+(function () {
+  const list = $('#recentList'); if (!list) return;
+  const decorate = () => { try { addPostQueueButton(); } catch (e) { } try { histSelPaint(); } catch (e) { } try { simButtons(); } catch (e) { } try { mooveBadge(); } catch (e) { } };
+  new MutationObserver(decorate).observe(list, { childList: true });
+  decorate();
+})();
