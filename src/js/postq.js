@@ -26,16 +26,6 @@ async function postToTikTok(blob, P, title) {
   return r;
 }
 
-/* ---------- button inside the normal export window ---------- */
-const _openExport = openExport;
-openExport = function () {
-  _openExport();
-  const go = $('#exGo'); if (!go) return; const P = S.project;
-  const btn = document.createElement('button'); btn.className = 'btn'; btn.id = 'exTik'; btn.textContent = '📲 Postar no TikTok'; btn.hidden = true; go.before(btn);
-  const obs = new MutationObserver(() => { btn.hidden = !/Salvar MP4/.test(go.textContent); }); obs.observe(go, { childList: true, characterData: true, subtree: true });
-  window.__lastExport = null;
-  btn.onclick = () => { const b = window.__lastExport; if (b) postToTikTok(b, P); };
-};
 const _exportMP4 = exportMP4;
 exportMP4 = async function (P, o) { const b = await _exportMP4(P, o); window.__lastExport = b; return b; };
 
@@ -107,29 +97,17 @@ renderHistory = function () { _renderHistory(); addPostQueueButton(); };
 
 /* ---------- "Postar no TikTok" inside the Publicar tab ---------- */
 const TIK = { id: null, blob: null, busy: false, ctl: null };
-exportMP4 = (f => async function (P, o) { const b = await f(P, o); if (P === S.project) { TIK.id = P.id; TIK.blob = b; } return b; })(exportMP4);
+exportMP4 = (f => async function (P, o) { const b = await f(P, o); if (P === S.project) { TIK.id = P.id; TIK.blob = b; setTimeout(tikRefresh, 0); } return b; })(exportMP4);
 function tikBlockHTML(P) {
   const ready = TIK.id === P.id && TIK.blob;
-  return `<div class="post-block" id="tikBox" style="margin-bottom:10px"><button class="btn primary" type="button" data-post="tik" style="width:100%">${TIK.busy ? 'Exportando… toque para cancelar' : ready ? '📲 Postar no TikTok' : '📲 Exportar e postar no TikTok'}</button>
-    <small class="muted" id="tikMsg" style="display:block;margin-top:6px;font-size:12px">${ready ? 'Toque: a legenda e as 5 hashtags vão copiadas e o TikTok abre com o vídeo. Lá é só colar.' : 'Exporta o vídeo e depois você toca de novo para enviar ao TikTok.'}${P.post ? '' : ' Gere o pacote abaixo para ir com legenda e hashtags.'}</small></div>`;
+  return `<div class="post-block" id="tikBox" style="margin-bottom:10px"><button class="btn primary" type="button" data-post="tik" style="width:100%">${ready ? '📲 Enviar para o TikTok' : '📲 Exportar e postar'}</button>
+    <small class="muted" style="display:block;margin-top:6px;font-size:12px">${ready ? 'O vídeo já está pronto: toque e escolha o TikTok. A legenda com as hashtags vai copiada.' : 'Exporta o vídeo e no fim um toque copia a legenda com as hashtags e abre o TikTok.'}${P.post ? '' : ' Gere o pacote abaixo para ir com legenda e hashtags.'}</small></div>`;
 }
 postHTML = (f => function (P) { return P.mode === 'footage' ? f(P) : tikBlockHTML(P) + f(P); })(postHTML);
 function tikRefresh() { const box = $('#tikBox'); if (box && S.project) box.outerHTML = tikBlockHTML(S.project); }
 onPostClick = (f => async function (e) {
   const b = e.target.closest('[data-post]'); if (b?.dataset.post !== 'tik') return f(e);
-  const P = S.project; if (!P) return;
-  if (TIK.busy) { TIK.ctl?.abort(); return; }
-  if (TIK.id === P.id && TIK.blob) return postToTikTok(TIK.blob, P);
-  if (!exportSupported()) return toast('Este navegador não exporta MP4. Use Safari ou Chrome atualizados.');
-  if (P.narration?.store && !P.narration.buffer) { try { P.narration.buffer = await loadVoice(P.narration.store); } catch (err) { } }
-  TIK.busy = true; TIK.ctl = new AbortController(); tikRefresh();
-  let wake = null; try { wake = await navigator.wakeLock?.request('screen'); } catch (err) { }
-  try {
-    await fontsReady();
-    await exportMP4(P, { quality: 1080, speed: 1, signal: TIK.ctl.signal, onProgress: ({ stage, k }) => { const m = $('#tikMsg'); if (m) m.textContent = `${stage} ${Math.round(k * 100)}%`; } });
-    TIK.busy = false; tikRefresh(); toast('Vídeo pronto. Toque em Postar no TikTok');
-  } catch (err) { TIK.busy = false; tikRefresh(); if (err?.code !== 'cancelled') toast('Não deu para exportar: ' + (err?.message || err)); }
-  wake?.release?.();
+  if (!S.project) return; openExport();
 })(onPostClick);
 /* any edit makes the exported file stale */
 afterChange = (f => function (...a) { if (TAB !== 'post' && S.project && TIK.id === S.project.id && !TIK.busy) { TIK.id = null; TIK.blob = null; } return f(...a); })(afterChange);

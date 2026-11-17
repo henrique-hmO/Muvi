@@ -819,17 +819,27 @@ function openExport() {
   ov.querySelector('#exS')?.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; speed = +b.dataset.v; $$('#exS button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   $('#exSrt').onclick = async () => { const srt = buildSRT(P); if (!srt.trim()) return toast('Não há legenda'); if (await saveFile(`${slug(P.title)}.srt`, srt) === 'saved') toast('Legenda salva'); };
   $('#exJson')?.addEventListener('click', async () => { if (await saveFile(`${slug(P.title)}.moove-studio.json`, snapshot(P)) === 'saved') toast('Projeto salvo'); });
-  let blob = null, ctl = null;
+  let blob = (typeof TIK !== 'undefined' && TIK.id === P.id && TIK.blob) || null, ctl = null;
+  /* depois de exportar: UM toque copia legenda + hashtags e abre o compartilhar do celular (TikTok, Instagram, Fotos…); no computador salva o arquivo */
+  const shareOK = (() => { try { return !!navigator.canShare?.({ files: [new File([new Blob(['x'], { type: 'video/mp4' })], 'a.mp4', { type: 'video/mp4' })] }); } catch (e) { return false; } })();
+  const ready = () => {
+    $('#exProg').hidden = false; $('#exBar').style.width = '100%';
+    $('#exStage').textContent = `Pronto · ${(blob.size / 1048576).toFixed(1)} MB${P.post ? ' · a legenda com as 5 hashtags vai copiada junto' : ''}`;
+    $('#exGo').textContent = shareOK ? '📲 Enviar (TikTok, Instagram, Fotos…)' : 'Salvar MP4'; $('#exGo').classList.add('primary');
+    if (shareOK && !$('#exSave')) { const b = document.createElement('button'); b.className = 'btn ghost'; b.id = 'exSave'; b.textContent = 'Só salvar o arquivo'; $('#exGo').before(b); b.onclick = async () => { if (await saveFile(`${slug(P.title)}.mp4`, blob) === 'saved') toast('Vídeo salvo'); }; }
+  };
+  if (blob) ready();
   $('#exGo').onclick = async () => {
-    if (blob) { const r = await saveFile(`${slug(P.title)}.mp4`, blob); if (r === 'saved') toast('Vídeo salvo'); return; }
+    if (blob) { await postToTikTok(blob, P); return; }
     if (ctl) { ctl.abort(); return; }
     if (!exportSupported()) { toast(window.Mp4Muxer ? 'Este navegador não exporta MP4. Use Chrome, Edge ou Safari atualizados.' : 'O módulo de exportação não carregou. Recarregue a página.'); return; }
     ctl = new AbortController(); $('#exProg').hidden = false; $('#exGo').textContent = 'Cancelar'; $('#exGo').classList.remove('primary');
     let wake = null; try { wake = await navigator.wakeLock?.request('screen'); } catch (e) { }
     try {
       blob = await exportMP4(P, { quality, speed, signal: ctl.signal, onProgress: ({ stage, k, eta }) => { $('#exBar').style.width = `${(k * 100).toFixed(1)}%`; $('#exStage').textContent = `${stage} · ${Math.round(k * 100)}%${eta ? ` · faltam ~${fmtDur(eta)}` : ''}`; } });
-      $('#exStage').textContent = `Pronto · ${(blob.size / 1048576).toFixed(1)} MB`; $('#exGo').textContent = 'Salvar MP4'; $('#exGo').classList.add('primary');
-      const r = await saveFile(`${slug(P.title)}.mp4`, blob); if (r === 'saved') toast('Vídeo salvo');
+      ready();
+      if (!shareOK) { copySync(postCaption(P)); const r = await saveFile(`${slug(P.title)}.mp4`, blob); if (r === 'saved') toast(P.post ? 'Vídeo salvo. Legenda e hashtags copiadas.' : 'Vídeo salvo'); }
+      else toast('Vídeo pronto. Toque em Enviar e escolha o TikTok.');
     } catch (e) {
       $('#exGo').textContent = 'Exportar MP4'; $('#exGo').classList.add('primary'); $('#exProg').hidden = e?.code === 'cancelled';
       $('#exStage').textContent = e?.code === 'cancelled' ? '' : `Falhou: ${e?.message || e}`; if (e?.code !== 'cancelled') console.error(e);
