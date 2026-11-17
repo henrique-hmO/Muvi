@@ -1,5 +1,11 @@
 /* ============ EXPORT: frame-accurate MP4 via WebCodecs + mp4-muxer ============ */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+/* waits until the user comes back to the app (iPhone pauses pages in the background) */
+function whenVisible(signal) {
+  if (!document.hidden) return Promise.resolve();
+  return new Promise((res, rej) => { const on = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', on); setTimeout(res, 250); } };
+    document.addEventListener('visibilitychange', on); signal?.addEventListener?.('abort', () => { document.removeEventListener('visibilitychange', on); rej({ code: 'cancelled' }); }, { once: true }); });
+}
 function exportSupported() { return 'VideoEncoder' in window && 'VideoFrame' in window && !!window.Mp4Muxer; }
 
 async function pickVideoCodec(w, h, fps, bitrate) {
@@ -43,19 +49,30 @@ async function exportMP4(P, { quality = 1080, speed = 1, onProgress, signal }) {
     video: { codec: 'avc', width: W, height: H, frameRate: fps },
     ...(aCfg && mix ? { audio: { codec: aCfg.mux, sampleRate: 48000, numberOfChannels: 2 } } : {}),
   });
-  let encErr = null;
-  const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: e => (encErr = e) });
-  venc.configure(vCfg);
+  let encErr = null, lastOut = -1, venc = null, recovered = 0;
+  /* the encoder can be lost when the iPhone puts the page in the background; we rebuild it and continue from the last frame it delivered */
+  const makeEnc = () => { const e = new VideoEncoder({ output: (c, m) => { lastOut = Math.max(lastOut, Math.round(c.timestamp / (1e6 / fps))); muxer.addVideoChunk(c, m); }, error: err => (encErr = err) }); e.configure(vCfg); return e; };
+  venc = makeEnc();
+  const healthy = () => !encErr && venc.state === 'configured';
 
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d', { alpha: false }); ctx.setTransform(W / BW, 0, 0, H / BH, 0, 0);
   const frameDur = 1e6 / fps; let fi = 0;
+  let forceKey = false;
   const emit = async (t) => {
-    if (encErr) throw encErr; if (signal?.aborted) throw { code: 'cancelled' };
+    if (signal?.aborted) throw { code: 'cancelled' };
+    if (document.hidden) { onProgress({ stage: 'Pausado: volte para o Muvi para continuar', k: fi / nFrames }); await whenVisible(signal); }
+    if (!healthy()) {
+      if (recovered++ > 4) throw encErr || new Error('O codificador parou. Tente exportar de novo.');
+      try { if (venc.state !== 'closed') venc.close(); } catch (e) { }
+      encErr = null; venc = makeEnc(); forceKey = true;
+      const back = lastOut + 1; if (back < fi) fi = back;
+      throw { code: 'rewind', fi };
+    }
     drawFrame(ctx, P, t, { total, video: S.video });
     const f = new VideoFrame(cv, { timestamp: Math.round(fi * frameDur), duration: Math.round(frameDur) });
-    venc.encode(f, { keyFrame: fi % (fps * 2) === 0 }); f.close(); fi++;
-    while (venc.encodeQueueSize > 8) await sleep(4);
+    venc.encode(f, { keyFrame: forceKey || fi % (fps * 2) === 0 }); forceKey = false; f.close(); fi++;
+    while (venc.encodeQueueSize > 8) { await sleep(4); if (!healthy()) break; }
   };
 
   const v = S.video;
@@ -63,47 +80,75 @@ async function exportMP4(P, { quality = 1080, speed = 1, onProgress, signal }) {
   const t0 = performance.now();
   const report = (stage) => { const k = fi / nFrames, el = (performance.now() - t0) / 1000; onProgress({ stage, k, eta: k > .02 ? el / k - el : null }); };
 
-  let acc = 0;
-  for (const s of P.scenes) {
-    const d = sceneDur(P, s), end = acc + d;
-    if (s.kind === 'clip' && v) {
-      let segAcc = acc;
-      for (const [x, y] of keptSegs(P, s)) {
-        const segStart = segAcc, segEnd = segAcc + (y - x); segAcc = segEnd;
-        await seekTo(v, x);
-        if ('requestVideoFrameCallback' in v) {
-          v.playbackRate = speed;
-          await new Promise((res, rej) => {
-            let done = false;
-            const finish = async () => { if (done) return; done = true; v.pause(); try { while (fi / fps < segEnd - 1e-6) await emit(fi / fps); res(); } catch (e) { rej(e); } };
-            const onFrame = async (_, meta) => {
-              if (done) return;
-              const tl = segStart + (meta.mediaTime - x);
-              try { while (fi / fps <= tl + .5 / fps && fi / fps < segEnd - 1e-6) await emit(fi / fps); } catch (e) { done = true; v.pause(); return rej(e); }
-              report('Gravando o vídeo');
-              if (meta.mediaTime >= y - .5 / fps || v.ended) return finish();
+  const starts = []; { let a = 0; for (const s of P.scenes) { starts.push(a); a += sceneDur(P, s); } }
+  const sceneAt = t => { let i = 0; while (i + 1 < starts.length && starts[i + 1] <= t + 1e-6) i++; return i; };
+  const runAll = async () => { let si = sceneAt(fi / fps);
+  while (si < P.scenes.length) {
+    const s = P.scenes[si], acc = starts[si], end = acc + sceneDur(P, s);
+    try {
+      if (s.kind === 'clip' && v) {
+        let segAcc = acc;
+        for (const [x, y] of keptSegs(P, s)) {
+          const segStart = segAcc, segEnd = segAcc + (y - x); segAcc = segEnd;
+          if (fi / fps >= segEnd - 1e-6) continue;                     /* already recorded (after a resume) */
+          const from = x + Math.max(0, fi / fps - segStart);
+          await seekTo(v, from);
+          if ('requestVideoFrameCallback' in v) {
+            v.playbackRate = speed;
+            await new Promise((res, rej) => {
+              let done = false;
+              const wake = () => { if (!document.hidden && !done && v.paused) v.play().catch(() => { }); };
+              document.addEventListener('visibilitychange', wake);
+              const out = fn => (...a) => { document.removeEventListener('visibilitychange', wake); fn(...a); };
+              res = out(res); rej = out(rej);
+              const finish = async () => { if (done) return; done = true; v.pause(); try { while (fi / fps < segEnd - 1e-6) await emit(fi / fps); res(); } catch (e) { rej(e); } };
+              const onFrame = async (_, meta) => {
+                if (done) return;
+                const tl = segStart + (meta.mediaTime - x);
+                try { while (fi / fps <= tl + .5 / fps && fi / fps < segEnd - 1e-6) await emit(fi / fps); } catch (e) { done = true; v.pause(); return rej(e); }
+                report('Gravando o vídeo');
+                if (meta.mediaTime >= y - .5 / fps || v.ended) return finish();
+                v.requestVideoFrameCallback(onFrame);
+              };
               v.requestVideoFrameCallback(onFrame);
-            };
-            v.requestVideoFrameCallback(onFrame);
-            v.onended = finish;
-            v.play().catch(rej);
-          });
-          v.playbackRate = 1;
-        } else {
-          while (fi / fps < segEnd - 1e-6) { await seekTo(v, x + (fi / fps - segStart)); await emit(fi / fps); report('Gravando o vídeo'); }
+              v.onended = finish;
+              v.play().catch(e => { if (document.hidden) return; done = true; rej(e); });
+            });
+            v.playbackRate = 1;
+          } else {
+            while (fi / fps < segEnd - 1e-6) { await seekTo(v, x + (fi / fps - segStart)); await emit(fi / fps); report('Gravando o vídeo'); }
+          }
         }
+      } else {
+        while (fi / fps < end - 1e-6) { await emit(fi / fps); if (fi % 15 === 0) { report('Renderizando as cenas'); await sleep(0); } }
       }
-    } else {
-      while (fi / fps < end - 1e-6) { await emit(fi / fps); if (fi % 15 === 0) { report('Renderizando as cenas'); await sleep(0); } }
+    } catch (e) {
+      if (e?.code !== 'rewind') throw e;
+      report('Retomando de onde parou'); si = sceneAt(fi / fps); continue;   /* encoder was rebuilt: continue from the last good frame */
     }
-    acc = end;
+    si++;
   }
+  };
+  await runAll();
   if (v) { v.muted = false; v.onended = null; }
 
   onProgress({ stage: 'Finalizando o vídeo', k: 1 });
-  await venc.flush(); venc.close();
+  /* flush; if the encoder was lost meanwhile (app in background), rebuild it and redo only the missing tail */
+  for (let tries = 0; ; tries++) {
+    await whenVisible(signal);
+    try { await venc.flush(); } catch (e) { encErr = encErr || e; }
+    if (healthy() && lastOut >= fi - 1) break;
+    if (tries > 3) throw encErr || new Error('O codificador parou. Tente exportar de novo.');
+    try { if (venc.state !== 'closed') venc.close(); } catch (e) { }
+    encErr = null; venc = makeEnc(); forceKey = true; fi = lastOut + 1;
+    if (v) v.muted = true;
+    await runAll();
+    if (v) v.muted = false;
+  }
+  venc.close();
 
   if (aCfg && mix) {
+    await whenVisible(signal);
     onProgress({ stage: 'Codificando o áudio', k: 1 });
     /* Safari (iOS 26 / macOS 26) hands back a wrong AAC config, which leaves the MP4 silent on iPhone, TikTok and Instagram.
        We always write the correct AudioSpecificConfig ourselves (AAC-LC, 48 kHz, 2 ch). */
