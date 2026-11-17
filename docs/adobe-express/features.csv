@@ -1,0 +1,23 @@
+feature,area,priority,original,clone,notes
+Legenda automática a partir do áudio,legendas,must,yes,yes,Muvi já legenda; Adobe deixa editar a transcrição e formatar
+Estilos prontos de legenda,legendas,must,yes,yes,Muvi tem presets (box/cine/conto)
+Escolher idioma falado da legenda,legendas,should,yes,no,Muvi assume pt-BR
+Texto para fala com várias vozes,voz,must,yes,yes,Muvi usa Speko (Caio/Luana/ElevenLabs)
+Prévia da voz antes de gerar,voz,should,yes,no,
+Controle de velocidade da voz,voz,must,yes,no,
+Controle de tom (pitch) da voz,voz,could,yes,no,
+Tom/emoção por trecho (neutro/positivo/negativo/expressivo),voz,must,yes,no,maior ganho de naturalidade
+Pausas marcadas no texto,voz,should,yes,no,
+Corrigir pronúncia (dicionário de palavras),voz,must,yes,no,ex.: IA → i-á; nomes próprios
+Importar texto DOCX/TXT,voz,could,yes,no,
+Modelo de voz parceiro (ElevenLabs Multilingual v2),voz,should,yes,yes,Muvi já tem via Speko
+Traduzir e dublar vídeo em vários idiomas,dublagem,should,yes,no,no Muvi dá para traduzir o roteiro e gerar a voz no novo idioma (sem precisar de lip sync de vídeo real)
+Manter a voz original na dublagem,dublagem,could,yes,no,exige clonagem de voz com consentimento
+Sincronia labial na dublagem,dublagem,skip,yes,no,só planos empresariais da Adobe; personagens do Muvi já mexem a boca pela voz
+Melhorar fala (tirar ruído e eco),audio,should,yes,no,útil no modo Editar meu vídeo
+Clip Maker (cortes de vídeo longo),edição,should,yes,yes,Muvi tem "achar trechos"
+Animar personagem com a voz,animação,must,yes,yes,Muvi já faz lip-sync pela voz
+Redimensionar para várias redes,saída,should,yes,partial,Muvi tem formatos por projeto
+Agendar posts,saída,could,yes,no,Muvi tem fila de postagem manual
+Banco de músicas e efeitos licenciados,assets,skip,yes,no,conteúdo licenciado da Adobe
+Vozes e áudios da Adobe,assets,skip,yes,no,conteúdo licenciado; não copiar nem extrair
